@@ -7,6 +7,7 @@ import { secureHeaders } from 'hono/secure-headers';
 
 // Import routes
 import { authRoutes } from './routes/auth';
+import { adminRoutes } from './routes/admin';
 // import { eventRoutes } from './routes/events';
 // import { registrationRoutes } from './routes/registrations';
 // import { paymentRoutes } from './routes/payments';
@@ -37,6 +38,7 @@ app.get('/', (c) => {
 
 // API routes
 app.route('/api/auth', authRoutes);
+app.route('/api/admin', adminRoutes);
 // app.route('/api/events', eventRoutes);
 // app.route('/api/registrations', registrationRoutes);
 // app.route('/api/payments', paymentRoutes);

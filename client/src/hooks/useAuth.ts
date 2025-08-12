@@ -12,22 +12,30 @@ export function useAuth() {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        console.log('🔄 Initializing auth state...');
         const token = tokenManager.getToken();
+        console.log('🔍 Found token:', token ? 'yes' : 'no');
+        
         if (token) {
           const result = await authApi.getCurrentUser(token);
           if (result.success && result.user) {
+            console.log('✅ User authenticated:', result.user.email);
             setUser(result.user);
           } else {
+            console.log('❌ Invalid token, removing...');
             // Invalid token, remove it
             tokenManager.removeToken();
           }
+        } else {
+          console.log('ℹ️  No token found, user not authenticated');
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        console.error('❌ Auth initialization error:', error);
         tokenManager.removeToken();
       } finally {
         setIsLoading(false);
         setIsInitialized(true);
+        console.log('✅ Auth initialization completed');
       }
     };
 
@@ -40,9 +48,14 @@ export function useAuth() {
       const result = await authApi.login(email, password);
       
       if (result.success && result.user && result.token) {
-        setUser(result.user);
+        // Ensure isAdmin is included in the user object
+        const userWithAdmin = {
+          ...result.user,
+          isAdmin: result.isAdmin || false
+        };
+        setUser(userWithAdmin);
         tokenManager.setToken(result.token);
-        return { success: true };
+        return { success: true, isAdmin: result.isAdmin };
       } else {
         return { success: false, error: result.error || 'Login failed' };
       }
@@ -75,11 +88,23 @@ export function useAuth() {
   const logout = useCallback(async () => {
     setIsLoading(true);
     try {
-      await authApi.logout();
+      console.log('🔄 Logging out...');
+      
+      // Call the logout API
+      const result = await authApi.logout();
+      
+      // Clear local state regardless of API response
+      console.log('🗑️  Clearing local auth state...');
       setUser(null);
       tokenManager.removeToken();
+      
+      console.log('✅ Logout completed');
       return { success: true };
     } catch (error) {
+      console.error('❌ Logout error:', error);
+      // Even if API fails, clear local state
+      setUser(null);
+      tokenManager.removeToken();
       return { success: false, error: error instanceof Error ? error.message : 'Logout failed' };
     } finally {
       setIsLoading(false);

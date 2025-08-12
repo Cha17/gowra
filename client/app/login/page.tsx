@@ -33,8 +33,13 @@ export default function LoginPage() {
 
     if (result.success) {
       toast.success('Login successful! Welcome back!');
-      // Redirect to dashboard or home page
-      window.location.href = '/';
+
+      // Check if user is admin and redirect accordingly
+      if (result.isAdmin) {
+        window.location.href = '/admin';
+      } else {
+        window.location.href = '/';
+      }
     } else {
       toast.error(
         result.error || 'Login failed. Please check your credentials.'

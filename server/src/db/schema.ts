@@ -1,8 +1,28 @@
-import { pgTable, uuid, varchar, text, timestamp, decimal, integer, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, decimal, integer, pgEnum, boolean } from 'drizzle-orm/pg-core';
 
 // Enums
 export const eventStatusEnum = pgEnum('event_status', ['draft', 'published', 'cancelled', 'completed']);
 export const paymentStatusEnum = pgEnum('payment_status', ['pending', 'paid', 'failed', 'refunded']);
+
+// Users table (regular users)
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: varchar('email', { length: 255 }).unique().notNull(),
+  name: varchar('name', { length: 255 }),
+  password_hash: varchar('password_hash', { length: 255 }).notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Admin Users table
+export const adminUsers = pgTable('admin_users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: varchar('email', { length: 255 }).unique().notNull(),
+  name: varchar('name', { length: 255 }),
+  password_hash: varchar('password_hash', { length: 255 }).notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+});
 
 // Events table
 export const events = pgTable('events', {
@@ -24,7 +44,7 @@ export const events = pgTable('events', {
 // Registrations table
 export const registrations = pgTable('registrations', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull(), // References Neon Auth user
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }), // References users table
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
   paymentStatus: paymentStatusEnum('payment_status').default('pending').notNull(),
   paymentReference: varchar('payment_reference', { length: 255 }),
@@ -46,6 +66,10 @@ export const paymentHistory = pgTable('payment_history', {
 });
 
 // Export types for use in the application
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type AdminUser = typeof adminUsers.$inferSelect;
+export type NewAdminUser = typeof adminUsers.$inferInsert;
 export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;
 export type Registration = typeof registrations.$inferSelect;

@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { neon } from '@neondatabase/serverless';
 import { 
   authenticateUser, 
   createUser, 
@@ -7,7 +8,37 @@ import {
   authMiddleware 
 } from '../lib/auth';
 
-const authRoutes = new Hono();
+// Define the context type for Hono
+interface AuthContext {
+  Variables: {
+    user: {
+      id: string;
+      email: string;
+      name?: string;
+      created_at: string;
+      updated_at: string;
+      isAdmin: boolean;
+    };
+  };
+}
+
+// Define the authentication result type
+interface AuthResult {
+  success: boolean;
+  user?: {
+    id: string;
+    email: string;
+    name?: string;
+    created_at: string;
+    updated_at: string;
+    isAdmin: boolean;
+  };
+  token?: string;
+  isAdmin?: boolean;
+  error?: string;
+}
+
+const authRoutes = new Hono<AuthContext>();
 
 // Initialize auth table on startup
 authRoutes.use('*', async (c, next) => {
@@ -36,7 +67,7 @@ authRoutes.post('/register', async (c) => {
 
     const result = await createUser(email, password, name);
 
-    if (result.success) {
+    if (result.success && result.user) {
       return c.json({
         success: true,
         message: 'User registered successfully',
@@ -45,7 +76,8 @@ authRoutes.post('/register', async (c) => {
           email: result.user.email,
           name: result.user.name,
           created_at: result.user.created_at,
-          updated_at: result.user.updated_at
+          updated_at: result.user.updated_at,
+          isAdmin: false
         },
         token: result.token
       });
@@ -69,9 +101,9 @@ authRoutes.post('/login', async (c) => {
       return c.json({ error: 'Email and password are required' }, 400);
     }
 
-    const result = await authenticateUser(email, password);
+    const result: AuthResult = await authenticateUser(email, password);
 
-    if (result.success) {
+    if (result.success && result.user && result.token) {
       return c.json({
         success: true,
         message: 'Login successful',
@@ -80,9 +112,11 @@ authRoutes.post('/login', async (c) => {
           email: result.user.email,
           name: result.user.name,
           created_at: result.user.created_at,
-          updated_at: result.user.updated_at
+          updated_at: result.user.updated_at,
+          isAdmin: result.isAdmin || false
         },
-        token: result.token
+        token: result.token,
+        isAdmin: result.isAdmin || false
       });
     } else {
       return c.json({ error: result.error }, 401);
@@ -98,6 +132,10 @@ authRoutes.get('/me', authMiddleware, async (c) => {
   try {
     const user = c.get('user');
     
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+    
     return c.json({
       success: true,
       user: {
@@ -105,7 +143,8 @@ authRoutes.get('/me', authMiddleware, async (c) => {
         email: user.email,
         name: user.name,
         created_at: user.created_at,
-        updated_at: user.updated_at
+        updated_at: user.updated_at,
+        isAdmin: user.isAdmin
       }
     });
   } catch (error) {
@@ -121,6 +160,10 @@ authRoutes.put('/profile', authMiddleware, async (c) => {
     const body = await c.req.json();
     const { name } = body;
 
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
     // For now, just return success - you can implement actual update logic later
     return c.json({
       success: true,
@@ -130,7 +173,8 @@ authRoutes.put('/profile', authMiddleware, async (c) => {
         email: user.email,
         name: name || user.name,
         created_at: user.created_at,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        isAdmin: user.isAdmin
       }
     });
   } catch (error) {
@@ -145,6 +189,41 @@ authRoutes.post('/logout', async (c) => {
     success: true,
     message: 'Logout successful'
   });
+});
+
+// Debug endpoint to check database state (remove in production)
+authRoutes.get('/debug/users', async (c) => {
+  try {
+    const sql = neon(process.env.DATABASE_URL!);
+    
+    // Check users table
+    const users = await sql`SELECT id, email, name, created_at FROM users`;
+    
+    // Check admin_users table
+    const adminUsers = await sql`SELECT id, email, name, created_at FROM admin_users`;
+    
+    return c.json({
+      success: true,
+      debug: {
+        usersTable: {
+          count: users.length,
+          users: users
+        },
+        adminUsersTable: {
+          count: adminUsers.length,
+          users: adminUsers
+        },
+        message: 'Database state retrieved successfully'
+      }
+    });
+  } catch (error) {
+    console.error('Debug endpoint error:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Failed to retrieve database state',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
 });
 
 export { authRoutes };

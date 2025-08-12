@@ -5,8 +5,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/a
 export const isAdmin = (user: any) => {
   if (!user) return false;
   
-  const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || [];
-  return adminEmails.includes(user.email);
+  // Check if the user object has isAdmin property set to true
+  return user.isAdmin === true;
 };
 
 // Authentication status types
@@ -20,6 +20,7 @@ export interface User {
   image?: string;
   created_at: string;
   updated_at: string;
+  isAdmin?: boolean;
 }
 
 // API response types
@@ -29,6 +30,7 @@ export interface AuthResponse {
   user?: User;
   token?: string;
   error?: string;
+  isAdmin?: boolean;
 }
 
 // API functions
@@ -145,13 +147,16 @@ export const tokenManager = {
   setToken(token: string) {
     if (typeof window !== 'undefined') {
       localStorage.setItem('auth_token', token);
+      console.log('💾 Token stored in localStorage');
     }
   },
 
   // Get token from localStorage
   getToken(): string | null {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('auth_token');
+      const token = localStorage.getItem('auth_token');
+      console.log('🔍 Token retrieved from localStorage:', token ? 'exists' : 'not found');
+      return token;
     }
     return null;
   },
@@ -160,6 +165,7 @@ export const tokenManager = {
   removeToken() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('auth_token');
+      console.log('🗑️  Token removed from localStorage');
     }
   },
 }; 

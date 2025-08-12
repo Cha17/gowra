@@ -2,40 +2,61 @@
 
 import { useAuthContext } from '@/src/components/providers/NeonAuthProvider';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import Image from 'next/image';
-import {
-  Menu,
-  X,
-  User,
-  LogOut,
-  Settings,
-  Calendar,
-  Home,
-  Users,
-} from 'lucide-react';
-import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { Home, Calendar, User, Settings, LogOut, Menu, X } from 'lucide-react';
 import Background from '../ui/Background';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 
 export default function Header() {
   const { user, logout, isAuthenticated, isAdmin } = useAuthContext();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const router = useRouter();
 
   const handleLogout = async () => {
-    const result = await logout();
-    if (result.success) {
-      toast.success('Logged out successfully');
-      setIsProfileOpen(false);
-    } else {
-      toast.error('Logout failed');
+    try {
+      console.log('🔄 Starting logout process...');
+      const result = await logout();
+
+      if (result.success) {
+        toast.success('Logged out successfully');
+
+        // Force a page refresh to ensure all components update
+        console.log('🔄 Redirecting to home page...');
+        router.push('/');
+
+        // Force refresh after a short delay to ensure state is cleared
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
+      } else {
+        console.error('❌ Logout failed:', result.error);
+        toast.error('Logout failed: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('❌ Logout error:', error);
+      toast.error(
+        'Logout failed: ' +
+          (error instanceof Error ? error.message : 'Unknown error')
+      );
     }
   };
 
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Events', href: '/events', icon: Calendar },
-    ...(isAdmin ? [{ name: 'Admin', href: '/admin', icon: Users }] : []),
   ];
 
   return (
@@ -79,59 +100,77 @@ export default function Header() {
             {/* Desktop Auth Section */}
             <div className="hidden md:flex items-center space-x-4">
               {isAuthenticated ? (
-                <div className="relative">
-                  <button
-                    onClick={() => setIsProfileOpen(!isProfileOpen)}
-                    className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md p-2 transition-colors"
-                  >
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <User className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <span className="text-sm font-medium">
-                      {user?.name || user?.email}
-                    </span>
-                    {isAdmin && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                        Admin
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="flex items-center space-x-2 h-auto p-2 hover:bg-gray-100"
+                    >
+                      <Avatar className="w-8 h-8">
+                        <AvatarFallback className="bg-blue-100 text-blue-600">
+                          {user?.name?.charAt(0) ||
+                            user?.email?.charAt(0) ||
+                            'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium text-gray-700">
+                        {user?.name || user?.email}
                       </span>
-                    )}
-                  </button>
-
-                  {/* Profile Dropdown */}
-                  {isProfileOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                      <div className="px-4 py-2 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900">
-                          {user?.name}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-56 bg-white border border-gray-200 shadow-lg rounded-lg"
+                  >
+                    <DropdownMenuLabel className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-semibold leading-none text-gray-900">
+                          {user?.name || 'User'}
                         </p>
-                        <p className="text-sm text-gray-500">{user?.email}</p>
+                        <p className="text-xs leading-none text-gray-500">
+                          {user?.email}
+                        </p>
                       </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuItem
+                      asChild
+                      className="px-3 py-2 hover:bg-blue-50 focus:bg-blue-50"
+                    >
                       <Link
                         href="/profile"
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                        onClick={() => setIsProfileOpen(false)}
+                        className="cursor-pointer text-gray-700 hover:text-blue-600"
                       >
-                        <User className="w-4 h-4 mr-2" />
+                        <User className="w-4 h-4 mr-2 text-gray-500" />
                         Profile
                       </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      asChild
+                      className="px-3 py-2 hover:bg-blue-50 focus:bg-blue-50"
+                    >
                       <Link
                         href="/settings"
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                        onClick={() => setIsProfileOpen(false)}
+                        className="cursor-pointer text-gray-700 hover:text-blue-600"
                       >
-                        <Settings className="w-4 h-4 mr-2" />
+                        <Settings className="w-4 h-4 mr-2 text-gray-500" />
                         Settings
                       </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                      >
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Sign out
-                      </button>
-                    </div>
-                  )}
-                </div>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 focus:bg-red-50 px-3 py-2"
+                    >
+                      <LogOut className="w-4 h-4 mr-2 text-red-500" />
+                      Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <div className="flex items-center space-x-4">
                   <Link
@@ -152,16 +191,18 @@ export default function Header() {
 
             {/* Mobile menu button */}
             <div className="md:hidden">
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-gray-700 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md p-2"
+                className="p-2"
               >
                 {isMenuOpen ? (
                   <X className="w-6 h-6" />
                 ) : (
                   <Menu className="w-6 h-6" />
                 )}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -193,11 +234,6 @@ export default function Header() {
                           {user?.name}
                         </p>
                         <p className="text-sm text-gray-500">{user?.email}</p>
-                        {isAdmin && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mt-1">
-                            Admin
-                          </span>
-                        )}
                       </div>
                       <Link
                         href="/profile"
@@ -215,16 +251,17 @@ export default function Header() {
                         <Settings className="w-5 h-5" />
                         <span>Settings</span>
                       </Link>
-                      <button
+                      <Button
+                        variant="ghost"
                         onClick={() => {
                           handleLogout();
                           setIsMenuOpen(false);
                         }}
-                        className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 w-full px-3 py-2 rounded-md text-base font-medium transition-colors"
+                        className="w-full justify-start text-red-600 hover:text-red-700"
                       >
-                        <LogOut className="w-5 h-5" />
-                        <span>Sign out</span>
-                      </button>
+                        <LogOut className="w-5 h-5 mr-2" />
+                        Sign out
+                      </Button>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -251,14 +288,6 @@ export default function Header() {
             </div>
           )}
         </div>
-
-        {/* Click outside to close dropdown */}
-        {isProfileOpen && (
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setIsProfileOpen(false)}
-          />
-        )}
       </header>
     </>
   );
