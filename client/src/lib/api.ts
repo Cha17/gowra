@@ -1,4 +1,4 @@
-import { auth } from './auth';
+import { tokenManager } from './auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -17,7 +17,7 @@ class ApiClient {
     };
 
     // Add authentication token if available
-    const token = await auth.getToken();
+    const token = tokenManager.getToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
