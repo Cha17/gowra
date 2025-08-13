@@ -23,6 +23,7 @@ interface AuthContextType {
   ) => Promise<{ success: boolean; error?: string }>;
   isAdmin: boolean;
   isAuthenticated: boolean;
+  apiCallWithRefresh: <T>(apiCall: (token: string) => Promise<T>) => Promise<T>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

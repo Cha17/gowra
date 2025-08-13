@@ -49,7 +49,173 @@ export interface AdminRegistration {
   event_date: string;
 }
 
-// Admin API functions
+// Admin API functions that work with token refresh
+export const createAdminApiWithRefresh = (apiCallWithRefresh: (apiCall: (token: string) => Promise<any>) => Promise<any>) => ({
+  // Get admin dashboard stats
+  async getStats(): Promise<{ success: boolean; stats?: AdminStats; error?: string }> {
+    try {
+      return await apiCallWithRefresh(async (token: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/stats`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json();
+        return data;
+      });
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Network error. Please try again.',
+      };
+    }
+  },
+
+  // Get all users
+  async getUsers(): Promise<{ success: boolean; users?: AdminUser[]; error?: string }> {
+    try {
+      return await apiCallWithRefresh(async (token: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/users`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json();
+        return data;
+      });
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Network error. Please try again.',
+      };
+    }
+  },
+
+  // Get all events
+  async getEvents(): Promise<{ success: boolean; events?: AdminEvent[]; error?: string }> {
+    try {
+      return await apiCallWithRefresh(async (token: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/events`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json();
+        return data;
+      });
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Network error. Please try again.',
+      };
+    }
+  },
+
+  // Get all registrations
+  async getRegistrations(): Promise<{ success: boolean; registrations?: AdminRegistration[]; error?: string }> {
+    try {
+      return await apiCallWithRefresh(async (token: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/registrations`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json();
+        return data;
+      });
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Network error. Please try again.',
+      };
+    }
+  },
+
+  // Create new event
+  async createEvent(eventData: Partial<AdminEvent>): Promise<{ success: boolean; event?: AdminEvent; error?: string }> {
+    try {
+      return await apiCallWithRefresh(async (token: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/events`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(eventData),
+        });
+
+        const data = await response.json();
+        return data;
+      });
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Network error. Please try again.',
+      };
+    }
+  },
+
+  // Update event
+  async updateEvent(eventId: string, eventData: Partial<AdminEvent>): Promise<{ success: boolean; event?: AdminEvent; error?: string }> {
+    try {
+      return await apiCallWithRefresh(async (token: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/events/${eventId}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(eventData),
+        });
+
+        const data = await response.json();
+        return data;
+      });
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Network error. Please try again.',
+      };
+    }
+  },
+
+  // Delete event
+  async deleteEvent(eventId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      return await apiCallWithRefresh(async (token: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/events/${eventId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json();
+        return data;
+      });
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Network error. Please try again.',
+      };
+    }
+  },
+});
+
+// Legacy admin API (deprecated - use createAdminApiWithRefresh instead)
 export const adminApi = {
   // Get admin dashboard stats
   async getStats(token: string): Promise<{ success: boolean; stats?: AdminStats; error?: string }> {

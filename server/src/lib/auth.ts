@@ -5,8 +5,13 @@ import { neon } from '@neondatabase/serverless';
 // Database connection
 const sql = neon(process.env.DATABASE_URL!);
 
-// JWT secret key
+// JWT secret keys
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key';
+
+// Token expiration times
+const ACCESS_TOKEN_EXPIRY = '15m';  // 15 minutes
+const REFRESH_TOKEN_EXPIRY = '7d';  // 7 days
 
 // User type for server
 export interface ServerUser {
@@ -38,12 +43,21 @@ export interface CleanUser {
   isAdmin: boolean;
 }
 
-// Auth result type
+// Auth result type with refresh token
 export interface AuthResult {
   success: boolean;
   user?: CleanUser;
   token?: string;
+  refreshToken?: string;
   isAdmin?: boolean;
+  error?: string;
+}
+
+// Refresh token result type
+export interface RefreshResult {
+  success: boolean;
+  token?: string;
+  user?: CleanUser;
   error?: string;
 }
 
@@ -70,6 +84,30 @@ export const initAuthTable = async () => {
       password_hash VARCHAR(255) NOT NULL,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
+
+  // Create refresh tokens table
+  await sql`
+    CREATE TABLE IF NOT EXISTS refresh_tokens (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      user_id UUID NOT NULL,
+      token_hash VARCHAR(255) NOT NULL,
+      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `;
+
+  // Create admin refresh tokens table
+  await sql`
+    CREATE TABLE IF NOT EXISTS admin_refresh_tokens (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      user_id UUID NOT NULL,
+      token_hash VARCHAR(255) NOT NULL,
+      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      FOREIGN KEY (user_id) REFERENCES admin_users(id) ON DELETE CASCADE
     )
   `;
 
@@ -101,27 +139,138 @@ export const verifyPassword = async (password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash);
 };
 
-// Generate JWT token
-export const generateToken = (user: { id: string; email: string; name?: string; isAdmin?: boolean }): string => {
+// Generate JWT access token
+export const generateAccessToken = (user: { id: string; email: string; name?: string; isAdmin?: boolean }): string => {
   return jwt.sign(
     { 
       id: user.id, 
       email: user.email, 
       name: user.name,
-      isAdmin: user.isAdmin
+      isAdmin: user.isAdmin,
+      type: 'access'
     },
     JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: ACCESS_TOKEN_EXPIRY }
   );
 };
 
-// Verify JWT token
-export const verifyToken = (token: string) => {
+// Generate JWT refresh token
+export const generateRefreshToken = (user: { id: string; email: string; name?: string; isAdmin?: boolean }): string => {
+  return jwt.sign(
+    { 
+      id: user.id, 
+      email: user.email, 
+      name: user.name,
+      isAdmin: user.isAdmin,
+      type: 'refresh'
+    },
+    JWT_REFRESH_SECRET,
+    { expiresIn: REFRESH_TOKEN_EXPIRY }
+  );
+};
+
+// Verify JWT access token
+export const verifyAccessToken = (token: string) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
+    if (decoded.type !== 'access') {
+      return { success: false, error: 'Invalid token type' };
+    }
     return { success: true, user: decoded };
   } catch (error) {
     return { success: false, error: 'Invalid token' };
+  }
+};
+
+// Verify JWT refresh token
+export const verifyRefreshToken = (token: string) => {
+  try {
+    const decoded = jwt.verify(token, JWT_REFRESH_SECRET) as any;
+    if (decoded.type !== 'refresh') {
+      return { success: false, error: 'Invalid token type' };
+    }
+    return { success: true, user: decoded };
+  } catch (error) {
+    return { success: false, error: 'Invalid token' };
+  }
+};
+
+// Store refresh token in database
+export const storeRefreshToken = async (userId: string, refreshToken: string, isAdmin: boolean = false): Promise<boolean> => {
+  try {
+    const tokenHash = await hashPassword(refreshToken);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+    
+    if (isAdmin) {
+      await sql`
+        INSERT INTO admin_refresh_tokens (user_id, token_hash, expires_at)
+        VALUES (${userId}, ${tokenHash}, ${expiresAt})
+      `;
+    } else {
+      await sql`
+        INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
+        VALUES (${userId}, ${tokenHash}, ${expiresAt})
+      `;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to store refresh token:', error);
+    return false;
+  }
+};
+
+// Validate refresh token from database
+export const validateRefreshToken = async (userId: string, refreshToken: string, isAdmin: boolean = false): Promise<boolean> => {
+  try {
+    let tokens;
+    
+    if (isAdmin) {
+      tokens = await sql`
+        SELECT token_hash, expires_at 
+        FROM admin_refresh_tokens 
+        WHERE user_id = ${userId} AND expires_at > NOW()
+        ORDER BY created_at DESC
+        LIMIT 1
+      `;
+    } else {
+      tokens = await sql`
+        SELECT token_hash, expires_at 
+        FROM refresh_tokens 
+        WHERE user_id = ${userId} AND expires_at > NOW()
+        ORDER BY created_at DESC
+        LIMIT 1
+      `;
+    }
+    
+    if (!tokens || tokens.length === 0) {
+      return false;
+    }
+    
+    const tokenHash = tokens[0].token_hash;
+    return await verifyPassword(refreshToken, tokenHash);
+  } catch (error) {
+    console.error('Failed to validate refresh token:', error);
+    return false;
+  }
+};
+
+// Revoke refresh token
+export const revokeRefreshToken = async (userId: string, isAdmin: boolean = false): Promise<boolean> => {
+  try {
+    if (isAdmin) {
+      await sql`
+        DELETE FROM admin_refresh_tokens WHERE user_id = ${userId}
+      `;
+    } else {
+      await sql`
+        DELETE FROM refresh_tokens WHERE user_id = ${userId}
+      `;
+    }
+    return true;
+  } catch (error) {
+    console.error('Failed to revoke refresh token:', error);
+    return false;
   }
 };
 
@@ -138,7 +287,11 @@ export const createUser = async (email: string, password: string, name?: string)
     
     if (result && result.length > 0) {
       const user = result[0] as { id: string; email: string; name?: string; created_at: string; updated_at: string };
-      const token = generateToken({ ...user, isAdmin: false });
+      const accessToken = generateAccessToken({ ...user, isAdmin: false });
+      const refreshToken = generateRefreshToken({ ...user, isAdmin: false });
+      
+      // Store refresh token
+      await storeRefreshToken(user.id, refreshToken, false);
       
       // Return clean user object with isAdmin field
       return { 
@@ -151,7 +304,8 @@ export const createUser = async (email: string, password: string, name?: string)
           updated_at: user.updated_at,
           isAdmin: false
         }, 
-        token 
+        token: accessToken,
+        refreshToken
       };
     }
     
@@ -177,7 +331,11 @@ export const createAdminUser = async (email: string, password: string, name?: st
     
     if (result && result.length > 0) {
       const user = result[0] as { id: string; email: string; name?: string; created_at: string; updated_at: string };
-      const token = generateToken({ ...user, isAdmin: true });
+      const accessToken = generateAccessToken({ ...user, isAdmin: true });
+      const refreshToken = generateRefreshToken({ ...user, isAdmin: true });
+      
+      // Store refresh token
+      await storeRefreshToken(user.id, refreshToken, true);
       
       // Return clean user object with isAdmin field
       return { 
@@ -190,7 +348,8 @@ export const createAdminUser = async (email: string, password: string, name?: st
           updated_at: user.updated_at,
           isAdmin: true
         }, 
-        token 
+        token: accessToken,
+        refreshToken
       };
     }
     
@@ -218,12 +377,21 @@ export const authenticateUser = async (email: string, password: string): Promise
       const isValidPassword = await verifyPassword(password, adminUser.password_hash);
       
       if (isValidPassword) {
-        const token = generateToken({ 
+        const accessToken = generateAccessToken({ 
           id: adminUser.id, 
           email: adminUser.email, 
           name: adminUser.name, 
           isAdmin: true 
         });
+        const refreshToken = generateRefreshToken({ 
+          id: adminUser.id, 
+          email: adminUser.email, 
+          name: adminUser.name, 
+          isAdmin: true 
+        });
+        
+        // Store refresh token
+        await storeRefreshToken(adminUser.id, refreshToken, true);
         
         // Return clean user object without password_hash
         return { 
@@ -236,7 +404,8 @@ export const authenticateUser = async (email: string, password: string): Promise
             updated_at: adminUser.updated_at,
             isAdmin: true
           }, 
-          token, 
+          token: accessToken,
+          refreshToken,
           isAdmin: true 
         };
       }
@@ -254,12 +423,21 @@ export const authenticateUser = async (email: string, password: string): Promise
       const isValidPassword = await verifyPassword(password, user.password_hash);
       
       if (isValidPassword) {
-        const token = generateToken({ 
+        const accessToken = generateAccessToken({ 
           id: user.id, 
           email: user.email, 
           name: user.name, 
           isAdmin: false 
         });
+        const refreshToken = generateRefreshToken({ 
+          id: user.id, 
+          email: user.email, 
+          name: user.name, 
+          isAdmin: false 
+        });
+        
+        // Store refresh token
+        await storeRefreshToken(user.id, refreshToken, false);
         
         // Return clean user object without password_hash
         return { 
@@ -272,7 +450,8 @@ export const authenticateUser = async (email: string, password: string): Promise
             updated_at: user.updated_at,
             isAdmin: false
           }, 
-          token, 
+          token: accessToken,
+          refreshToken,
           isAdmin: false 
         };
       }
@@ -281,6 +460,47 @@ export const authenticateUser = async (email: string, password: string): Promise
     return { success: false, error: 'Invalid email or password' };
   } catch (error) {
     return { success: false, error: 'Authentication failed' };
+  }
+};
+
+// Refresh access token
+export const refreshAccessToken = async (refreshToken: string): Promise<RefreshResult> => {
+  try {
+    // Verify refresh token
+    const result = verifyRefreshToken(refreshToken);
+    if (!result.success || !result.user) {
+      return { success: false, error: 'Invalid refresh token' };
+    }
+
+    const { id, isAdmin } = result.user;
+    
+    // Validate refresh token in database
+    const isValid = await validateRefreshToken(id, refreshToken, isAdmin);
+    if (!isValid) {
+      return { success: false, error: 'Refresh token not found or expired' };
+    }
+
+    // Get fresh user data
+    const userResult = await getUserById(id);
+    if (!userResult.success || !userResult.user) {
+      return { success: false, error: 'User not found' };
+    }
+
+    // Generate new access token
+    const newAccessToken = generateAccessToken({
+      id: userResult.user.id,
+      email: userResult.user.email,
+      name: userResult.user.name,
+      isAdmin: userResult.user.isAdmin
+    });
+
+    return {
+      success: true,
+      token: newAccessToken,
+      user: userResult.user
+    };
+  } catch (error) {
+    return { success: false, error: 'Token refresh failed' };
   }
 };
 
@@ -360,7 +580,7 @@ export const authMiddleware = async (c: any, next: any) => {
   }
 
   const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-  const result = verifyToken(token);
+  const result = verifyAccessToken(token);
 
   if (!result.success) {
     return c.json({ error: 'Invalid token' }, 401);

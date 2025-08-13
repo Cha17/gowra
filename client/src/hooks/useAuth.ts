@@ -14,24 +14,53 @@ export function useAuth() {
       try {
         console.log('🔄 Initializing auth state...');
         const token = tokenManager.getToken();
-        console.log('🔍 Found token:', token ? 'yes' : 'no');
+        const refreshToken = tokenManager.getRefreshToken();
         
-        if (token) {
-          const result = await authApi.getCurrentUser(token);
-          if (result.success && result.user) {
-            console.log('✅ User authenticated:', result.user.email);
-            setUser(result.user);
+        console.log('🔍 Found access token:', token ? 'yes' : 'no');
+        console.log('🔍 Found refresh token:', refreshToken ? 'yes' : 'no');
+        
+        if (token && refreshToken) {
+          // Check if access token is expired
+          if (tokenManager.isTokenExpired(token)) {
+            console.log('⏰ Access token expired, attempting refresh...');
+            const refreshResult = await refreshAccessToken(refreshToken);
+            if (refreshResult.success && refreshResult.token) {
+              console.log('✅ Token refreshed successfully');
+              tokenManager.setAccessToken(refreshResult.token);
+              if (refreshResult.user) {
+                setUser(refreshResult.user);
+              }
+            } else {
+              console.log('❌ Token refresh failed, clearing tokens...');
+              tokenManager.removeTokens();
+            }
           } else {
-            console.log('❌ Invalid token, removing...');
-            // Invalid token, remove it
-            tokenManager.removeToken();
+            // Token is valid, get current user
+            const result = await authApi.getCurrentUser(token);
+            if (result.success && result.user) {
+              console.log('✅ User authenticated:', result.user.email);
+              setUser(result.user);
+            } else {
+              console.log('❌ Invalid token, attempting refresh...');
+              const refreshResult = await refreshAccessToken(refreshToken);
+              if (refreshResult.success && refreshResult.token) {
+                console.log('✅ Token refreshed successfully');
+                tokenManager.setAccessToken(refreshResult.token);
+                if (refreshResult.user) {
+                  setUser(refreshResult.user);
+                }
+              } else {
+                console.log('❌ Token refresh failed, clearing tokens...');
+                tokenManager.removeTokens();
+              }
+            }
           }
         } else {
-          console.log('ℹ️  No token found, user not authenticated');
+          console.log('ℹ️  No tokens found, user not authenticated');
         }
       } catch (error) {
         console.error('❌ Auth initialization error:', error);
-        tokenManager.removeToken();
+        tokenManager.removeTokens();
       } finally {
         setIsLoading(false);
         setIsInitialized(true);
@@ -42,19 +71,80 @@ export function useAuth() {
     initializeAuth();
   }, []);
 
+  // Token refresh function
+  const refreshAccessToken = useCallback(async (refreshToken: string) => {
+    try {
+      console.log('🔄 Refreshing access token...');
+      const result = await authApi.refreshToken(refreshToken);
+      
+      if (result.success && result.token) {
+        console.log('✅ Access token refreshed successfully');
+        return { success: true, token: result.token, user: result.user };
+      } else {
+        console.log('❌ Token refresh failed:', result.error);
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('❌ Token refresh error:', error);
+      return { success: false, error: 'Token refresh failed' };
+    }
+  }, []);
+
+  // Enhanced API call wrapper with automatic token refresh
+  const apiCallWithRefresh = useCallback(async <T>(
+    apiCall: (token: string) => Promise<T>
+  ): Promise<T> => {
+    try {
+      const token = tokenManager.getToken();
+      if (!token) {
+        throw new Error('No access token available');
+      }
+
+      // Check if token is expired
+      if (tokenManager.isTokenExpired(token)) {
+        console.log('⏰ Access token expired, refreshing...');
+        const refreshToken = tokenManager.getRefreshToken();
+        if (refreshToken) {
+          const refreshResult = await refreshAccessToken(refreshToken);
+          if (refreshResult.success && refreshResult.token) {
+            tokenManager.setAccessToken(refreshResult.token);
+            // Retry the API call with new token
+            return await apiCall(refreshResult.token);
+          } else {
+            // Refresh failed, clear tokens and throw error
+            tokenManager.removeTokens();
+            setUser(null);
+            throw new Error('Token refresh failed');
+          }
+        } else {
+          // No refresh token, clear tokens and throw error
+          tokenManager.removeTokens();
+          setUser(null);
+          throw new Error('No refresh token available');
+        }
+      }
+
+      // Token is valid, make the API call
+      return await apiCall(token);
+    } catch (error) {
+      console.error('❌ API call with refresh failed:', error);
+      throw error;
+    }
+  }, [refreshAccessToken]);
+
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
     try {
       const result = await authApi.login(email, password);
       
-      if (result.success && result.user && result.token) {
+      if (result.success && result.user && result.token && result.refreshToken) {
         // Ensure isAdmin is included in the user object
         const userWithAdmin = {
           ...result.user,
           isAdmin: result.isAdmin || false
         };
         setUser(userWithAdmin);
-        tokenManager.setToken(result.token);
+        tokenManager.setTokens(result.token, result.refreshToken);
         return { success: true, isAdmin: result.isAdmin };
       } else {
         return { success: false, error: result.error || 'Login failed' };
@@ -71,9 +161,9 @@ export function useAuth() {
     try {
       const result = await authApi.register(email, password, name);
       
-      if (result.success && result.user && result.token) {
+      if (result.success && result.user && result.token && result.refreshToken) {
         setUser(result.user);
-        tokenManager.setToken(result.token);
+        tokenManager.setTokens(result.token, result.refreshToken);
         return { success: true };
       } else {
         return { success: false, error: result.error || 'Registration failed' };
@@ -90,13 +180,13 @@ export function useAuth() {
     try {
       console.log('🔄 Logging out...');
       
-      // Call the logout API
+      // Call the logout API to revoke refresh token
       const result = await authApi.logout();
       
       // Clear local state regardless of API response
       console.log('🗑️  Clearing local auth state...');
       setUser(null);
-      tokenManager.removeToken();
+      tokenManager.removeTokens();
       
       console.log('✅ Logout completed');
       return { success: true };
@@ -104,7 +194,7 @@ export function useAuth() {
       console.error('❌ Logout error:', error);
       // Even if API fails, clear local state
       setUser(null);
-      tokenManager.removeToken();
+      tokenManager.removeTokens();
       return { success: false, error: error instanceof Error ? error.message : 'Logout failed' };
     } finally {
       setIsLoading(false);
@@ -113,12 +203,9 @@ export function useAuth() {
 
   const updateProfile = useCallback(async (name: string) => {
     try {
-      const token = tokenManager.getToken();
-      if (!token) {
-        return { success: false, error: 'No authentication token' };
-      }
-
-      const result = await authApi.updateProfile(token, name);
+      const result = await apiCallWithRefresh(async (token: string) => {
+        return await authApi.updateProfile(token, name);
+      });
       
       if (result.success && result.user) {
         setUser(result.user);
@@ -129,7 +216,7 @@ export function useAuth() {
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : 'Profile update failed' };
     }
-  }, []);
+  }, [apiCallWithRefresh]);
 
   const checkIsAdmin = useCallback((user: User | null) => {
     return isAdmin(user);
@@ -145,5 +232,6 @@ export function useAuth() {
     updateProfile,
     isAdmin: checkIsAdmin(user),
     isAuthenticated: !!user,
+    apiCallWithRefresh, // Expose for use in other components
   };
 }

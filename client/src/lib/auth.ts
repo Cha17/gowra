@@ -29,8 +29,18 @@ export interface AuthResponse {
   message?: string;
   user?: User;
   token?: string;
+  refreshToken?: string;
   error?: string;
   isAdmin?: boolean;
+}
+
+// Refresh token response type
+export interface RefreshResponse {
+  success: boolean;
+  message?: string;
+  token?: string;
+  user?: User;
+  error?: string;
 }
 
 // API functions
@@ -65,6 +75,27 @@ export const authApi = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Network error. Please try again.',
+      };
+    }
+  },
+
+  // Refresh access token
+  async refreshToken(refreshToken: string): Promise<RefreshResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
       });
 
       const data = await response.json();
@@ -120,14 +151,21 @@ export const authApi = {
     }
   },
 
-  // Logout (client-side token removal)
+  // Logout (revoke refresh token)
   async logout(): Promise<AuthResponse> {
     try {
+      const token = tokenManager.getToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}/auth/logout`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       const data = await response.json();
@@ -141,31 +179,83 @@ export const authApi = {
   },
 };
 
-// Token management
+// Token management with refresh token support
 export const tokenManager = {
-  // Store token in localStorage
-  setToken(token: string) {
+  // Store tokens in localStorage
+  setTokens(accessToken: string, refreshToken: string) {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', token);
-      console.log('💾 Token stored in localStorage');
+      localStorage.setItem('auth_token', accessToken);
+      localStorage.setItem('refresh_token', refreshToken);
+      console.log('💾 Tokens stored in localStorage');
     }
   },
 
-  // Get token from localStorage
+  // Store access token only (for refresh scenarios)
+  setAccessToken(token: string) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('auth_token', token);
+      console.log('💾 Access token updated in localStorage');
+    }
+  },
+
+  // Get access token from localStorage
   getToken(): string | null {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('auth_token');
-      console.log('🔍 Token retrieved from localStorage:', token ? 'exists' : 'not found');
+      console.log('🔍 Access token retrieved from localStorage:', token ? 'exists' : 'not found');
       return token;
     }
     return null;
   },
 
-  // Remove token from localStorage
-  removeToken() {
+  // Get refresh token from localStorage
+  getRefreshToken(): string | null {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('refresh_token');
+      console.log('🔍 Refresh token retrieved from localStorage:', token ? 'exists' : 'not found');
+      return token;
+    }
+    return null;
+  },
+
+  // Remove all tokens from localStorage
+  removeTokens() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('auth_token');
-      console.log('🗑️  Token removed from localStorage');
+      localStorage.removeItem('refresh_token');
+      console.log('🗑️  All tokens removed from localStorage');
+    }
+  },
+
+  // Remove only access token (keep refresh token for auto-refresh)
+  removeAccessToken() {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth_token');
+      console.log('🗑️  Access token removed from localStorage');
+    }
+  },
+
+  // Check if access token is expired
+  isTokenExpired(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Date.now() / 1000;
+      return payload.exp < currentTime;
+    } catch (error) {
+      console.error('Error checking token expiration:', error);
+      return true; // Assume expired if we can't decode
+    }
+  },
+
+  // Check if refresh token is expired
+  isRefreshTokenExpired(refreshToken: string): boolean {
+    try {
+      const payload = JSON.parse(atob(refreshToken.split('.')[1]));
+      const currentTime = Date.now() / 1000;
+      return payload.exp < currentTime;
+    } catch (error) {
+      console.error('Error checking refresh token expiration:', error);
+      return true; // Assume expired if we can't decode
     }
   },
 }; 

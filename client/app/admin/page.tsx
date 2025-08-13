@@ -2,8 +2,11 @@
 
 import { useAuthContext } from '@/src/components/providers/NeonAuthProvider';
 import { ProtectedRoute } from '@/src/components/auth/ProtectedRoute';
-import { adminApi, type AdminStats, type AdminEvent } from '@/src/lib/adminApi';
-import { tokenManager } from '@/src/lib/auth';
+import {
+  createAdminApiWithRefresh,
+  type AdminStats,
+  type AdminEvent,
+} from '@/src/lib/adminApi';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -19,24 +22,21 @@ import {
 } from 'lucide-react';
 
 function AdminDashboardContent() {
-  const { user } = useAuthContext();
+  const { user, apiCallWithRefresh } = useAuthContext();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [events, setEvents] = useState<AdminEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Create admin API with token refresh functionality
+  const adminApi = createAdminApiWithRefresh(apiCallWithRefresh);
+
   useEffect(() => {
     const fetchAdminData = async () => {
       try {
-        const token = tokenManager.getToken();
-        if (!token) {
-          toast.error('No authentication token found');
-          return;
-        }
-
-        // Fetch stats and events in parallel
+        // Fetch stats and events in parallel using the new API
         const [statsResult, eventsResult] = await Promise.all([
-          adminApi.getStats(token),
-          adminApi.getEvents(token),
+          adminApi.getStats(),
+          adminApi.getEvents(),
         ]);
 
         if (statsResult.success && statsResult.stats) {
@@ -55,7 +55,7 @@ function AdminDashboardContent() {
     };
 
     fetchAdminData();
-  }, []);
+  }, [adminApi]);
 
   const handleDeleteEvent = async (eventId: string) => {
     if (!confirm('Are you sure you want to delete this event?')) {
@@ -63,20 +63,14 @@ function AdminDashboardContent() {
     }
 
     try {
-      const token = tokenManager.getToken();
-      if (!token) {
-        toast.error('No authentication token found');
-        return;
-      }
-
-      const result = await adminApi.deleteEvent(token, eventId);
+      const result = await adminApi.deleteEvent(eventId);
 
       if (result.success) {
         toast.success('Event deleted successfully');
         // Remove the event from the local state
         setEvents(prev => prev.filter(event => event.id !== eventId));
         // Refresh stats
-        const statsResult = await adminApi.getStats(token);
+        const statsResult = await adminApi.getStats();
         if (statsResult.success && statsResult.stats) {
           setStats(statsResult.stats);
         }

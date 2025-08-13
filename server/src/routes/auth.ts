@@ -5,7 +5,9 @@ import {
   createUser, 
   getUserById, 
   initAuthTable,
-  authMiddleware 
+  authMiddleware,
+  refreshAccessToken,
+  revokeRefreshToken
 } from '../lib/auth';
 
 // Define the context type for Hono
@@ -34,6 +36,7 @@ interface AuthResult {
     isAdmin: boolean;
   };
   token?: string;
+  refreshToken?: string;
   isAdmin?: boolean;
   error?: string;
 }
@@ -79,7 +82,8 @@ authRoutes.post('/register', async (c) => {
           updated_at: result.user.updated_at,
           isAdmin: false
         },
-        token: result.token
+        token: result.token,
+        refreshToken: result.refreshToken
       });
     } else {
       return c.json({ error: result.error }, 400);
@@ -116,6 +120,7 @@ authRoutes.post('/login', async (c) => {
           isAdmin: result.isAdmin || false
         },
         token: result.token,
+        refreshToken: result.refreshToken,
         isAdmin: result.isAdmin || false
       });
     } else {
@@ -123,6 +128,34 @@ authRoutes.post('/login', async (c) => {
     }
   } catch (error) {
     console.error('Login error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Refresh token endpoint
+authRoutes.post('/refresh', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { refreshToken } = body;
+
+    if (!refreshToken) {
+      return c.json({ error: 'Refresh token is required' }, 400);
+    }
+
+    const result = await refreshAccessToken(refreshToken);
+
+    if (result.success && result.token) {
+      return c.json({
+        success: true,
+        message: 'Token refreshed successfully',
+        token: result.token,
+        user: result.user
+      });
+    } else {
+      return c.json({ error: result.error }, 401);
+    }
+  } catch (error) {
+    console.error('Token refresh error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
@@ -183,12 +216,24 @@ authRoutes.put('/profile', authMiddleware, async (c) => {
   }
 });
 
-// Logout endpoint (client-side token removal)
-authRoutes.post('/logout', async (c) => {
-  return c.json({
-    success: true,
-    message: 'Logout successful'
-  });
+// Logout endpoint (revoke refresh token)
+authRoutes.post('/logout', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    
+    if (user) {
+      // Revoke refresh token
+      await revokeRefreshToken(user.id, user.isAdmin);
+    }
+    
+    return c.json({
+      success: true,
+      message: 'Logout successful'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
 });
 
 // Debug endpoint to check database state (remove in production)

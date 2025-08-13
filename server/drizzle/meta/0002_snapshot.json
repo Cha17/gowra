@@ -1,0 +1,130 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "id": "0002_add_refresh_tokens",
+  "prevId": "0001_spicy_exodus",
+  "tables": {
+    "admin_refresh_tokens": {
+      "name": "admin_refresh_tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "hasDefault": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "hasDefault": false
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "varchar",
+          "primaryKey": false,
+          "hasDefault": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "hasDefault": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "hasDefault": true,
+          "default": "now()"
+        }
+      },
+      "foreignKeys": [
+        {
+          "name": "admin_refresh_tokens_user_id_admin_users_id_fk",
+          "tableName": "admin_refresh_tokens",
+          "columnNames": ["user_id"],
+          "foreignTableName": "admin_users",
+          "foreignColumnNames": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_admin_refresh_tokens_user_id",
+          "tableName": "admin_refresh_tokens",
+          "columnNames": ["user_id"]
+        },
+        {
+          "name": "idx_admin_refresh_tokens_expires_at",
+          "tableName": "admin_refresh_tokens",
+          "columnNames": ["expires_at"]
+        }
+      ]
+    },
+    "refresh_tokens": {
+      "name": "refresh_tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "hasDefault": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "hasDefault": false
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "varchar",
+          "primaryKey": false,
+          "hasDefault": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "hasDefault": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "hasDefault": true,
+          "default": "now()"
+        }
+      },
+      "foreignKeys": [
+        {
+          "name": "refresh_tokens_user_id_users_id_fk",
+          "tableName": "refresh_tokens",
+          "columnNames": ["user_id"],
+          "foreignTableName": "users",
+          "foreignColumnNames": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_refresh_tokens_user_id",
+          "tableName": "refresh_tokens",
+          "columnNames": ["user_id"]
+        },
+        {
+          "name": "idx_refresh_tokens_expires_at",
+          "tableName": "refresh_tokens",
+          "columnNames": ["expires_at"]
+        }
+      ]
+    }
+  }
+}
