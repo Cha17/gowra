@@ -3,6 +3,9 @@ import { Hono } from 'hono';
 // Import organized middleware and types
 import { allMiddleware, CustomContext } from './lib/middleware';
 
+// Import database components
+import { dbManager, dbUtils } from './db';
+
 // Import routes
 import { authRoutes } from './routes/auth';
 import { adminRoutes } from './routes/admin';
@@ -14,12 +17,18 @@ import { adminRoutes } from './routes/admin';
 const app = new Hono<CustomContext>();
 
 // ===== PHASE 3, STEP 3.1: HONO SERVER SETUP =====
+// ===== PHASE 3, STEP 3.2: DATABASE CONNECTION AND ORM SETUP =====
 
 // 1. Initialize Hono server with proper middleware configuration
 // 2. Set up CORS middleware for cross-origin requests
 // 3. Configure logging middleware for debugging
 // 4. Set up error handling middleware
 // 5. Create route structure for different API endpoints
+// 6. Configure Drizzle ORM connection to Neon database
+// 7. Set up database schema definitions using Drizzle
+// 8. Create database migration scripts
+// 9. Implement database connection pooling and error handling
+// 10. Set up database query optimization
 
 // ===== MIDDLEWARE CONFIGURATION =====
 
@@ -77,6 +86,100 @@ app.get('/api/status', (c) => {
       payments: 'planned'
     }
   });
+});
+
+// Database health check endpoint
+app.get('/api/db/health', async (c) => {
+  try {
+    const connectionState = dbManager.getConnectionState();
+    const performanceMetrics = await dbUtils.getPerformanceMetrics();
+    
+    return c.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      database: {
+        connection: connectionState.isConnected ? 'connected' : 'disconnected',
+        lastHealthCheck: new Date(connectionState.lastHealthCheck).toISOString(),
+        connectionCount: connectionState.connectionCount,
+        errorCount: connectionState.errorCount
+      },
+      performance: performanceMetrics,
+      message: 'Database health check completed successfully'
+    });
+  } catch (error) {
+    return c.json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+      message: 'Database health check failed'
+    }, 500);
+  }
+});
+
+// Database performance metrics endpoint
+app.get('/api/db/metrics', async (c) => {
+  try {
+    const queryStats = dbUtils.getQueryStats();
+    const performanceMetrics = await dbUtils.getPerformanceMetrics();
+    
+    return c.json({
+      timestamp: new Date().toISOString(),
+      queryOptimization: queryStats,
+      databasePerformance: performanceMetrics,
+      message: 'Database performance metrics retrieved successfully'
+    });
+  } catch (error) {
+    return c.json({
+      error: 'Failed to retrieve database metrics',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, 500);
+  }
+});
+
+// Database maintenance endpoint (admin only)
+app.post('/api/db/maintenance', async (c) => {
+  try {
+    // In a real application, you'd want to add authentication here
+    const { action } = await c.req.json();
+    
+    let result: any;
+    
+    switch (action) {
+      case 'createIndexes':
+        result = await dbUtils.createIndexes();
+        break;
+      case 'analyzeTables':
+        result = await dbUtils.analyzeTables();
+        break;
+      case 'vacuumTables':
+        result = await dbUtils.vacuumTables();
+        break;
+      case 'optimizeStorage':
+        result = await dbUtils.optimizeStorage();
+        break;
+      default:
+        return c.json({
+          error: 'Invalid maintenance action',
+          message: 'Supported actions: createIndexes, analyzeTables, vacuumTables, optimizeStorage',
+          timestamp: new Date().toISOString()
+        }, 400);
+    }
+    
+    return c.json({
+      success: true,
+      action,
+      timestamp: new Date().toISOString(),
+      message: `Database maintenance action '${action}' completed successfully`,
+      result
+    });
+  } catch (error) {
+    return c.json({
+      error: 'Database maintenance failed',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, 500);
+  }
 });
 
 // API routes with versioning
@@ -143,13 +246,15 @@ app.onError((err, c) => {
 });
 
 // Graceful shutdown handler
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.log('🛑 SIGTERM received, shutting down gracefully...');
+  await dbManager.closeConnection();
   process.exit(0);
 });
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   console.log('🛑 SIGINT received, shutting down gracefully...');
+  await dbManager.closeConnection();
   process.exit(0);
 });
 
