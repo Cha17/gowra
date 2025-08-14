@@ -9,9 +9,9 @@ import { dbManager, dbUtils } from './db';
 // Import routes
 import { authRoutes } from './routes/auth';
 import { adminRoutes } from './routes/admin';
-// import { eventRoutes } from './routes/events';
-// import { registrationRoutes } from './routes/registrations';
-// import { paymentRoutes } from './routes/payments';
+import { eventRoutes } from './routes/events';
+import { registrationRoutes } from './routes/registrations';
+import { paymentRoutes } from './routes/payments';
 
 // Create Hono app instance with custom context
 const app = new Hono<CustomContext>();
@@ -185,13 +185,16 @@ app.post('/api/db/maintenance', async (c) => {
 // API routes with versioning
 app.route('/api/v1/auth', authRoutes);
 app.route('/api/v1/admin', adminRoutes);
-// app.route('/api/v1/events', eventRoutes);
-// app.route('/api/v1/registrations', registrationRoutes);
-// app.route('/api/v1/payments', paymentRoutes);
+app.route('/api/v1/events', eventRoutes);
+app.route('/api/v1/registrations', registrationRoutes);
+app.route('/api/v1/payments', paymentRoutes);
 
 // Legacy route support (redirect to v1)
 app.route('/api/auth', authRoutes);
 app.route('/api/admin', adminRoutes);
+app.route('/api/events', eventRoutes);
+app.route('/api/registrations', registrationRoutes);
+app.route('/api/payments', paymentRoutes);
 
 // ===== ERROR HANDLING MIDDLEWARE =====
 

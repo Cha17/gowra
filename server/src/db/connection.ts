@@ -275,7 +275,7 @@ const dbManager = new DatabaseConnectionManager();
 export { dbManager };
 
 // Export the schema for use in migrations
-export { schema };
+export { schema }; 
 
 // Export async getters for database connections
 export const getDb = () => dbManager.getConnection();
