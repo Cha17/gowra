@@ -161,9 +161,9 @@ export function useAuth() {
     try {
       const result = await authApi.register(email, password, name);
       
-      if (result.success && result.user && result.token && result.refreshToken) {
-        setUser(result.user);
-        tokenManager.setTokens(result.token, result.refreshToken);
+      // For registration, we only check for success and user creation
+      // No automatic login - user needs to login manually after registration
+      if (result.success && result.user) {
         return { success: true };
       } else {
         return { success: false, error: result.error || 'Registration failed' };

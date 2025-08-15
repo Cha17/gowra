@@ -627,11 +627,11 @@ export default function EventDetailPage() {
 
                 {/* Registration Button */}
                 {canRegister && !isRegistered && (
-                  <div className="space-y-6 mb-8">
+                  <div className="space-y-6">
                     {isAuthenticated ? (
                       <button
                         onClick={handleOpenRegistrationModal}
-                        className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-2xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                        className="w-full flex items-center justify-center gap-2 py-4 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-2xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
                       >
                         <CreditCard className="h-6 w-6" />
                         <span className="text-lg">Register Now</span>
@@ -667,8 +667,10 @@ export default function EventDetailPage() {
 
         {/* Registration Modal */}
         {showRegistrationModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
+            {/* Backdrop blur effect */}
+            <div className="absolute inset-0 bg-white/30 backdrop-blur-sm"></div>
+            <div className="relative z-10 bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
               {/* Modal Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <h2 className="text-2xl font-bold text-gray-900">
@@ -746,93 +748,6 @@ export default function EventDetailPage() {
                         </div>
                       </div>
 
-                      {/* Phone Number */}
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Phone Number *
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Phone className="h-5 w-5 text-gray-400" />
-                          </div>
-                          <input
-                            type="tel"
-                            required
-                            value={registrationForm.phone}
-                            onChange={e =>
-                              handleRegistrationFormChange(
-                                'phone',
-                                e.target.value
-                              )
-                            }
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                            placeholder="Enter your phone number"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Emergency Contact */}
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Emergency Contact
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <User className="h-5 w-5 text-gray-400" />
-                          </div>
-                          <input
-                            type="text"
-                            value={registrationForm.emergencyContact}
-                            onChange={e =>
-                              handleRegistrationFormChange(
-                                'emergencyContact',
-                                e.target.value
-                              )
-                            }
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                            placeholder="Emergency contact name and phone"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Dietary Restrictions */}
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Dietary Restrictions
-                        </label>
-                        <textarea
-                          value={registrationForm.dietaryRestrictions}
-                          onChange={e =>
-                            handleRegistrationFormChange(
-                              'dietaryRestrictions',
-                              e.target.value
-                            )
-                          }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
-                          rows={3}
-                          placeholder="Any dietary restrictions or allergies?"
-                        />
-                      </div>
-
-                      {/* Special Requests */}
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Special Requests
-                        </label>
-                        <textarea
-                          value={registrationForm.specialRequests}
-                          onChange={e =>
-                            handleRegistrationFormChange(
-                              'specialRequests',
-                              e.target.value
-                            )
-                          }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
-                          rows={3}
-                          placeholder="Any special requests or accommodations?"
-                        />
-                      </div>
-
                       {/* Submit Button */}
                       <div className="flex gap-3">
                         <button
@@ -845,7 +760,6 @@ export default function EventDetailPage() {
                         <button
                           type="submit"
                           disabled={
-                            !registrationForm.phone.trim() ||
                             !registrationForm.name.trim() ||
                             !registrationForm.email.trim()
                           }
@@ -900,12 +814,6 @@ export default function EventDetailPage() {
                             <span className="text-gray-600">Email:</span>
                             <span className="font-medium text-gray-900">
                               {registrationForm.email}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Phone:</span>
-                            <span className="font-medium text-gray-900">
-                              {registrationForm.phone}
                             </span>
                           </div>
                           {registrationForm.emergencyContact && (

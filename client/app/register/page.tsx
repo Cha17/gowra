@@ -96,9 +96,11 @@ export default function RegisterPage() {
     );
 
     if (result.success) {
-      toast.success('Registration successful! Welcome to our platform!');
-      // Redirect to dashboard or home page
-      window.location.href = '/';
+      toast.success('Registration successful! Please log in to continue.');
+      // Redirect to login page after successful registration
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1500); // Wait 1.5 seconds to show the success message
     } else {
       toast.error(result.error || 'Registration failed. Please try again.');
     }

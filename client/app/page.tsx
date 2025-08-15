@@ -239,7 +239,9 @@ export default function Home() {
                   >
                     <div className="relative h-56 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 overflow-hidden">
                       {event.image_url ? (
-                        <img
+                        <Image
+                          width={500}
+                          height={500}
                           src={event.image_url}
                           alt={event.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"

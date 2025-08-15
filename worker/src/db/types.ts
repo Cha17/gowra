@@ -37,6 +37,7 @@ export type KyselifyMaterializeView<T extends PgMaterializedView> = {
 // Database enum types
 export type EventStatus = 'draft' | 'published' | 'cancelled' | 'completed';
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
+export type UserRole = 'user' | 'organizer';
 
 // Main database interface
 export interface Database {

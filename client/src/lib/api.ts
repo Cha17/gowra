@@ -1,6 +1,7 @@
 import { tokenManager } from './auth';
+import { environment } from '../config/environment';
 
-const API_BASE_URL: string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787';
+const API_BASE_URL: string = environment.getApiUrl();
 
 class ApiClient {
   private baseUrl: string;

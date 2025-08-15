@@ -1,17 +1,24 @@
 import { compare, hash } from 'bcrypt-ts';
-import { createDbClient } from '../db/types';
+import { createDbClient, type UserRole } from '../db/types';
 import type { EnvBinding } from '../schema/env';
 
 // Token expiration times
 const ACCESS_TOKEN_EXPIRY = 15 * 60; // 15 minutes in seconds
 const REFRESH_TOKEN_EXPIRY = 7 * 24 * 60 * 60; // 7 days in seconds
 
-// User type for worker
+// User type for worker (includes new organizer fields)
 export interface WorkerUser {
   id: string;
   email: string;
   name?: string;
   password_hash: string;
+  role: UserRole; // 'user' or 'organizer'
+  organization_name?: string;
+  organization_type?: string;
+  event_types?: string; // JSON string
+  organization_description?: string;
+  organization_website?: string;
+  organizer_since?: string;
   created_at: string;
   updated_at: string;
 }
@@ -21,9 +28,16 @@ export interface CleanUser {
   id: string;
   email: string;
   name?: string;
+  role?: UserRole; // 'user' or 'organizer' (only for regular users)
+  organization_name?: string;
+  organization_type?: string;
+  event_types?: string[];
+  organization_description?: string;
+  organization_website?: string;
+  organizer_since?: string;
   created_at: string;
   updated_at: string;
-  isAdmin: boolean;
+  isAdmin: boolean; // true for admin users, false for regular users
 }
 
 // Auth result type with refresh token
@@ -55,7 +69,7 @@ export const verifyPassword = async (password: string, hashValue: string): Promi
 };
 
 // Generate JWT access token using Web Crypto API
-export const generateAccessToken = async (user: { id: string; email: string; name?: string; isAdmin?: boolean }, secret: string): Promise<string> => {
+export const generateAccessToken = async (user: { id: string; email: string; name?: string; isAdmin?: boolean; role?: UserRole }, secret: string): Promise<string> => {
   const header = {
     alg: 'HS256',
     typ: 'JWT'
@@ -65,7 +79,8 @@ export const generateAccessToken = async (user: { id: string; email: string; nam
     id: user.id,
     email: user.email,
     name: user.name,
-    isAdmin: user.isAdmin,
+    isAdmin: user.isAdmin || false, // Keep for admin users
+    role: user.role, // Add role for regular users ('user' or 'organizer')
     type: 'access',
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + ACCESS_TOKEN_EXPIRY
@@ -75,7 +90,7 @@ export const generateAccessToken = async (user: { id: string; email: string; nam
 };
 
 // Generate JWT refresh token using Web Crypto API
-export const generateRefreshToken = async (user: { id: string; email: string; name?: string; isAdmin?: boolean }, secret: string): Promise<string> => {
+export const generateRefreshToken = async (user: { id: string; email: string; name?: string; isAdmin?: boolean; role?: UserRole }, secret: string): Promise<string> => {
   const header = {
     alg: 'HS256',
     typ: 'JWT'
@@ -85,7 +100,8 @@ export const generateRefreshToken = async (user: { id: string; email: string; na
     id: user.id,
     email: user.email,
     name: user.name,
-    isAdmin: user.isAdmin,
+    isAdmin: user.isAdmin || false,
+    role: user.role, // Add role for regular users
     type: 'refresh',
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + REFRESH_TOKEN_EXPIRY
@@ -223,18 +239,30 @@ export const createUser = async (email: string, password: string, name: string |
         email,
         name,
         password_hash: passwordHash,
+        role: 'user', // Explicitly set role to 'user'
       })
-      .returning(['id', 'email', 'name', 'created_at', 'updated_at'])
+      .returning([
+        'id', 'email', 'name', 'created_at', 'updated_at',
+        'role', 'organization_name', 'organization_type', 'event_types',
+        'organization_description', 'organization_website', 'organizer_since'
+      ])
       .executeTakeFirst();
     
     if (result) {
-      // Return clean user object with isAdmin field
+      // Return clean user object with all organizer fields
       return { 
         success: true, 
         user: {
           id: result.id,
           email: result.email,
           name: result.name,
+          role: result.role,
+          organization_name: result.organization_name,
+          organization_type: result.organization_type,
+          event_types: result.event_types ? JSON.parse(result.event_types) : [],
+          organization_description: result.organization_description,
+          organization_website: result.organization_website,
+          organizer_since: result.organizer_since,
           created_at: result.created_at,
           updated_at: result.updated_at,
           isAdmin: false
@@ -339,7 +367,11 @@ export const authenticateUser = async (email: string, password: string, db: any,
     // If not admin, check regular users
     const userResult = await db
       .selectFrom('users')
-      .select(['id', 'email', 'name', 'password_hash', 'created_at', 'updated_at'])
+      .select([
+        'id', 'email', 'name', 'password_hash', 'created_at', 'updated_at',
+        'role', 'organization_name', 'organization_type', 'event_types', 
+        'organization_description', 'organization_website', 'organizer_since'
+      ])
       .where('email', '=', email)
       .executeTakeFirst();
     
@@ -351,14 +383,16 @@ export const authenticateUser = async (email: string, password: string, db: any,
           id: userResult.id, 
           email: userResult.email, 
           name: userResult.name, 
-          isAdmin: false 
+          isAdmin: false,
+          role: userResult.role // Include user role in JWT
         }, env.JWT_SECRET);
         
         const refreshToken = await generateRefreshToken({ 
           id: userResult.id, 
           email: userResult.email, 
           name: userResult.name, 
-          isAdmin: false 
+          isAdmin: false,
+          role: userResult.role // Include user role in refresh token
         }, env.JWT_REFRESH_SECRET);
         
         // Return clean user object without password_hash
@@ -368,6 +402,13 @@ export const authenticateUser = async (email: string, password: string, db: any,
             id: userResult.id,
             email: userResult.email,
             name: userResult.name,
+            role: userResult.role,
+            organization_name: userResult.organization_name,
+            organization_type: userResult.organization_type,
+            event_types: userResult.event_types ? JSON.parse(userResult.event_types) : [],
+            organization_description: userResult.organization_description,
+            organization_website: userResult.organization_website,
+            organizer_since: userResult.organizer_since,
             created_at: userResult.created_at,
             updated_at: userResult.updated_at,
             isAdmin: false

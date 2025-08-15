@@ -3,13 +3,27 @@ import { pgTable, uuid, varchar, text, timestamp, decimal, integer, pgEnum, bool
 // Enums
 export const eventStatusEnum = pgEnum('event_status', ['draft', 'published', 'cancelled', 'completed']);
 export const paymentStatusEnum = pgEnum('payment_status', ['pending', 'paid', 'failed', 'refunded']);
+// User role enum - defines if user is regular user or organizer
+export const userRoleEnum = pgEnum('user_role', ['user', 'organizer']);
 
-// Users table (regular users)
+// Users table (regular users + organizers)
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: varchar('email', { length: 255 }).unique().notNull(),
   name: varchar('name', { length: 255 }),
   password_hash: varchar('password_hash', { length: 255 }).notNull(),
+  
+  // User role field - determines if user is 'user' or 'organizer'
+  role: userRoleEnum('role').default('user').notNull(),
+  
+  // Organizer-specific fields (only filled when role = 'organizer')
+  organization_name: varchar('organization_name', { length: 255 }), // e.g., "Tech Community Manila"
+  organization_type: varchar('organization_type', { length: 100 }), // e.g., "Community Group"
+  event_types: text('event_types'), // JSON array of event types: ["Workshop", "Meetup"]
+  organization_description: text('organization_description'), // Brief description of organization
+  organization_website: varchar('organization_website', { length: 255 }), // Optional website
+  organizer_since: timestamp('organizer_since'), // When user became organizer
+  
   created_at: timestamp('created_at').defaultNow().notNull(),
   updated_at: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -28,7 +42,14 @@ export const admin_users = pgTable('admin_users', {
 export const events = pgTable('events', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
+  
+  // Legacy organizer field (string) - kept for old events
   organizer: varchar('organizer', { length: 255 }).notNull(),
+  
+  // New organizer reference (UUID) - for new events created by organizers
+  // This links to users.id when role = 'organizer'
+  organizer_id: uuid('organizer_id').references(() => users.id),
+  
   details: text('details'),
   date: timestamp('date').notNull(),
   imageUrl: varchar('image_url', { length: 500 }),
