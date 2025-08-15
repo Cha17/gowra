@@ -1,4 +1,8 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import {
   Calendar,
   Users,
@@ -7,9 +11,59 @@ import {
   ArrowRight,
   Star,
   CheckCircle,
+  MapPin,
 } from 'lucide-react';
+import { apiClient } from '@/src/lib/api';
+
+interface Event {
+  id: string;
+  name: string;
+  organizer: string;
+  details: string;
+  date: string;
+  image_url?: string;
+  venue: string;
+  status: string;
+  price: string;
+  capacity: number;
+  registration_count: number;
+}
 
 export default function Home() {
+  const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeaturedEvents = async () => {
+      try {
+        const response = await apiClient.get(
+          '/api/events?status=published&limit=3'
+        );
+        if ((response as any).success && (response as any).data) {
+          setFeaturedEvents((response as any).data.events);
+        }
+      } catch (error) {
+        console.error('Error fetching featured events:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedEvents();
+  }, []);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const formatPrice = (price: string) => {
+    const numPrice = parseFloat(price);
+    return numPrice === 0 ? 'Free' : `$${numPrice.toFixed(2)}`;
+  };
   return (
     <div className="min-h-screen overflow-x-hidden">
       {/* Hero Section */}
@@ -140,6 +194,156 @@ export default function Home() {
                 99.9% uptime with 24/7 support for peace of mind
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Events Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white/70 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Featured Events
+            </h2>
+            <p className="text-xl text-gray-600">
+              Discover amazing events happening near you
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[...Array(3)].map((_, index) => (
+                <div
+                  key={index}
+                  className="bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse"
+                >
+                  <div className="h-48 bg-gray-200"></div>
+                  <div className="p-6">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2 mb-4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : featuredEvents.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+              {featuredEvents.map(event => {
+                const spotsLeft = event.capacity - event.registration_count;
+
+                return (
+                  <div
+                    key={event.id}
+                    className="group bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
+                  >
+                    <div className="relative h-56 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 overflow-hidden">
+                      {event.image_url ? (
+                        <img
+                          src={event.image_url}
+                          alt={event.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Calendar className="h-20 w-20 text-white opacity-90" />
+                        </div>
+                      )}
+
+                      {/* Price Badge */}
+                      <div className="absolute top-4 left-4">
+                        <div className="bg-white/95 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/50">
+                          <span className="text-purple-600 font-bold text-sm">
+                            {formatPrice(event.price)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Featured Badge */}
+                      <div className="absolute top-4 right-4">
+                        <div className="bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full px-3 py-1.5">
+                          <span className="text-gray-900 font-bold text-xs">
+                            ⭐ FEATURED
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-6">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-purple-600 transition-colors">
+                        {event.name}
+                      </h3>
+
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
+                        {event.details}
+                      </p>
+
+                      <div className="space-y-3 mb-6">
+                        <div className="flex items-center text-gray-700">
+                          <div className="flex-shrink-0 w-8 h-8 bg-purple-50 rounded-full flex items-center justify-center mr-3">
+                            <Calendar className="h-4 w-4 text-purple-600" />
+                          </div>
+                          <span className="text-sm font-medium">
+                            {formatDate(event.date)}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center text-gray-700">
+                          <div className="flex-shrink-0 w-8 h-8 bg-pink-50 rounded-full flex items-center justify-center mr-3">
+                            <MapPin className="h-4 w-4 text-pink-600" />
+                          </div>
+                          <span className="text-sm font-medium truncate">
+                            {event.venue}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center text-gray-700">
+                          <div className="flex-shrink-0 w-8 h-8 bg-green-50 rounded-full flex items-center justify-center mr-3">
+                            <Users className="h-4 w-4 text-green-600" />
+                          </div>
+                          <span className="text-sm font-medium">
+                            <span className="text-green-600 font-semibold">
+                              {spotsLeft}
+                            </span>{' '}
+                            spots left
+                          </span>
+                        </div>
+                      </div>
+
+                      <Link
+                        href={`/events/${event.id}`}
+                        className="block w-full"
+                      >
+                        <button className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-2xl hover:from-purple-700 hover:to-pink-700 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl">
+                          <span>View Event</span>
+                          <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                No events available
+              </h3>
+              <p className="text-gray-600">
+                Check back later for exciting events!
+              </p>
+            </div>
+          )}
+
+          <div className="text-center">
+            <Link
+              href="/events"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-full hover:from-purple-700 hover:to-pink-700 transition-all duration-200 transform hover:scale-105"
+            >
+              View All Events
+              <ArrowRight className="h-5 w-5" />
+            </Link>
           </div>
         </div>
       </section>

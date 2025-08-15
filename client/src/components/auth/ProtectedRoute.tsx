@@ -46,3 +46,6 @@ export function ProtectedRoute({
 
   return <>{children}</>;
 }
+
+// Default export for backward compatibility
+export default ProtectedRoute;

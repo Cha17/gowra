@@ -1,7 +1,6 @@
 'use client';
 
 import { useAuthContext } from '@/src/components/providers/NeonAuthProvider';
-import { ProtectedRoute } from '@/src/components/auth/ProtectedRoute';
 import {
   createAdminApiWithRefresh,
   type AdminStats,
@@ -9,17 +8,21 @@ import {
 } from '@/src/lib/adminApi';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 import {
   Users,
   Calendar,
   CreditCard,
   BarChart3,
-  Settings,
   Plus,
   Eye,
   Edit,
   Trash2,
+  TrendingUp,
+  Activity,
+  DollarSign,
 } from 'lucide-react';
+import { ProtectedRoute } from '@/src/components/auth/ProtectedRoute';
 
 function AdminDashboardContent() {
   const { user, apiCallWithRefresh } = useAuthContext();

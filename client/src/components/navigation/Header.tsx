@@ -57,6 +57,7 @@ export default function Header() {
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Events', href: '/events', icon: Calendar },
+    { name: 'About', href: '/about', icon: User },
   ];
 
   return (
@@ -133,6 +134,19 @@ export default function Header() {
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
+
+                    <DropdownMenuItem
+                      asChild
+                      className="px-3 py-2 hover:bg-blue-50 focus:bg-blue-50"
+                    >
+                      <Link
+                        href="/dashboard"
+                        className="cursor-pointer text-gray-700 hover:text-blue-600"
+                      >
+                        <Calendar className="w-4 h-4 mr-2 text-gray-500" />
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
 
                     <DropdownMenuItem
                       asChild
@@ -216,7 +230,7 @@ export default function Header() {
                     <Link
                       key={item.name}
                       href={item.href}
-                      className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <Icon className="w-5 h-5" />
@@ -236,8 +250,16 @@ export default function Header() {
                         <p className="text-sm text-gray-500">{user?.email}</p>
                       </div>
                       <Link
+                        href="/dashboard"
+                        className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Calendar className="w-5 h-5" />
+                        <span>Dashboard</span>
+                      </Link>
+                      <Link
                         href="/profile"
-                        className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                        className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium transition-colors"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         <User className="w-5 h-5" />
@@ -245,7 +267,7 @@ export default function Header() {
                       </Link>
                       <Link
                         href="/settings"
-                        className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                        className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium transition-colors"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         <Settings className="w-5 h-5" />
@@ -267,7 +289,7 @@ export default function Header() {
                     <div className="space-y-2">
                       <Link
                         href="/login"
-                        className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                        className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium transition-colors"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         <User className="w-5 h-5" />
@@ -275,7 +297,7 @@ export default function Header() {
                       </Link>
                       <Link
                         href="/register"
-                        className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                        className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-base font-medium transition-colors"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         <User className="w-5 h-5" />

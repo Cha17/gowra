@@ -1,5 +1,5 @@
 // Neon Auth API configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787';
 
 // Authentication utilities
 export const isAdmin = (user: any) => {
@@ -48,7 +48,7 @@ export const authApi = {
   // Register user
   async register(email: string, password: string, name?: string): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -69,7 +69,7 @@ export const authApi = {
   // Login user
   async login(email: string, password: string): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -90,7 +90,7 @@ export const authApi = {
   // Refresh access token
   async refreshToken(refreshToken: string): Promise<RefreshResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ export const authApi = {
   // Get current user
   async getCurrentUser(token: string): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/me`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -132,7 +132,7 @@ export const authApi = {
   // Update user profile
   async updateProfile(token: string, name: string): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -163,7 +163,7 @@ export const authApi = {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         headers,
       });

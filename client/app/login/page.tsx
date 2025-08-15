@@ -35,7 +35,7 @@ export default function LoginPage() {
       toast.success('Login successful! Welcome back!');
 
       // Check if user is admin and redirect accordingly
-      if (result.isAdmin) {
+      if ((result as any).isAdmin) {
         window.location.href = '/admin';
       } else {
         window.location.href = '/';
