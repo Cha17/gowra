@@ -19,14 +19,14 @@ interface Event {
   id: string;
   name: string;
   organizer: string;
-  details: string;
-  date: string;
-  image_url?: string;
-  venue: string;
-  status: string;
-  price: string;
-  capacity: number;
-  registration_count: number;
+  details?: string | null; // Optional since it might be null
+  date?: string | null; // Optional since it might be null
+  image_url?: string | null; // Optional since it might be null
+  venue?: string | null; // Optional since it might be null
+  status?: string | null; // Optional since it might be null
+  price?: string | null; // Optional since it might be null
+  capacity?: number | null; // Optional since it might be null
+  registration_count?: number; // Optional since our API doesn't return this yet
 }
 
 export default function Home() {
@@ -39,6 +39,7 @@ export default function Home() {
         const response = await apiClient.get(
           '/api/events?status=published&limit=3'
         );
+        console.log('API Response:', response); // Debug log
         if ((response as any).success && (response as any).data) {
           setFeaturedEvents((response as any).data.events);
         }
@@ -52,16 +53,23 @@ export default function Home() {
     fetchFeaturedEvents();
   }, []);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'Date TBD';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch (error) {
+      return 'Date TBD';
+    }
   };
 
-  const formatPrice = (price: string) => {
+  const formatPrice = (price: string | null | undefined) => {
+    if (!price) return 'Free';
     const numPrice = parseFloat(price);
+    if (isNaN(numPrice)) return 'Free';
     return numPrice === 0 ? 'Free' : `$${numPrice.toFixed(2)}`;
   };
   return (
@@ -230,7 +238,8 @@ export default function Home() {
           ) : featuredEvents.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
               {featuredEvents.map(event => {
-                const spotsLeft = event.capacity - event.registration_count;
+                const spotsLeft =
+                  (event.capacity || 0) - (event.registration_count || 0);
 
                 return (
                   <div
@@ -277,7 +286,7 @@ export default function Home() {
                       </h3>
 
                       <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
-                        {event.details}
+                        {event.details || 'No details available'}
                       </p>
 
                       <div className="space-y-3 mb-6">
@@ -295,7 +304,7 @@ export default function Home() {
                             <MapPin className="h-4 w-4 text-pink-600" />
                           </div>
                           <span className="text-sm font-medium truncate">
-                            {event.venue}
+                            {event.venue || 'Venue TBD'}
                           </span>
                         </div>
 

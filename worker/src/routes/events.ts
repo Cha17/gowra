@@ -5,6 +5,93 @@ import type { EnvBinding } from '../schema/env';
 
 const eventRoutes = new Hono<{ Bindings: EnvBinding }>();
 
+// Get public events (no authentication required)
+eventRoutes.get('/', async (c) => {
+  try {
+    const { status, limit, search, organizer, page } = c.req.query();
+    
+    const db = createDbClient({
+      connection_string: c.env.DATABASE_URL,
+    });
+    
+    let query = db
+      .selectFrom('events')
+      .selectAll();
+    
+    // Filter by status if provided
+    if (status && ['draft', 'published', 'cancelled', 'completed'].includes(status)) {
+      query = query.where('status', '=', status as any);
+    }
+    
+    // Filter by organizer if provided
+    if (organizer) {
+      query = query.where('organizer', 'ilike', `%${organizer}%`);
+    }
+    
+    // Search in name and details if provided
+    if (search) {
+      query = query.where((eb) => 
+        eb.or([
+          eb('name', 'ilike', `%${search}%`),
+          eb('details', 'ilike', `%${search}%`)
+        ])
+      );
+    }
+    
+    // Get total count for pagination
+    const countQuery = query;
+    const totalEvents = await countQuery.execute();
+    const total = totalEvents.length;
+    
+    // Apply pagination if page is provided
+    if (page) {
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit || '9');
+      if (!isNaN(pageNum) && !isNaN(limitNum)) {
+        const offset = (pageNum - 1) * limitNum;
+        query = query.offset(offset).limit(limitNum);
+      }
+    } else if (limit) {
+      // Apply limit if provided (for home page)
+      const limitNum = parseInt(limit);
+      if (!isNaN(limitNum)) {
+        query = query.limit(limitNum);
+      }
+    }
+    
+    // Order by creation date (newest first)
+    query = query.orderBy('created_at', 'desc');
+    
+    const events = await query.execute();
+    
+    // Calculate pagination info
+    const limitNum = parseInt(limit || '9');
+    const currentPage = parseInt(page || '1');
+    const totalPages = Math.ceil(total / limitNum);
+    
+    return c.json({
+      success: true,
+      data: {
+        events,
+        pagination: {
+          page: currentPage,
+          limit: limitNum,
+          total,
+          totalPages,
+          hasNext: currentPage < totalPages,
+          hasPrev: currentPage > 1
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get public events error:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Internal server error' 
+    }, 500);
+  }
+});
+
 // Create new event (organizers only)
 eventRoutes.post('/', requireOrganizer, async (c) => {
   try {
@@ -72,6 +159,43 @@ eventRoutes.post('/', requireOrganizer, async (c) => {
       error: 'Internal server error' 
       }, 500);
     }
+});
+
+// Get single event by ID (public, no authentication required)
+eventRoutes.get('/:id', async (c) => {
+  try {
+    const eventId = c.req.param('id');
+    
+    const db = createDbClient({
+      connection_string: c.env.DATABASE_URL,
+    });
+    
+    const event = await db
+      .selectFrom('events')
+      .selectAll()
+      .where('id', '=', eventId)
+      .executeTakeFirst();
+    
+    if (!event) {
+      return c.json({ 
+        success: false, 
+        error: 'Event not found' 
+      }, 404);
+    }
+    
+    return c.json({
+      success: true,
+      data: {
+        event
+      }
+    });
+  } catch (error) {
+    console.error('Get event error:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Internal server error' 
+    }, 500);
+  }
 });
 
 // Get organizer's events (organizers only)

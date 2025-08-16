@@ -20,17 +20,17 @@ interface Event {
   id: string;
   name: string;
   organizer: string;
-  details: string;
-  date: string;
-  image_url?: string;
-  venue: string;
-  status: string;
-  price: string;
-  capacity: number;
-  registration_deadline: string;
-  created_at: string;
-  updated_at: string;
-  registration_count: number;
+  details?: string | null;
+  date?: string | null;
+  image_url?: string | null;
+  venue?: string | null;
+  status?: string | null;
+  price?: string | null;
+  capacity?: number | null;
+  registration_deadline?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  registration_count?: number;
 }
 
 interface EventsResponse {
@@ -73,6 +73,8 @@ export default function EventsPage() {
         `/api/events?${params.toString()}`
       );
 
+      console.log('Events API Response:', response); // Debug log
+
       if (response.success && response.data) {
         setEvents(response.data.events);
         setTotalPages(response.data.pagination.totalPages);
@@ -91,24 +93,36 @@ export default function EventsPage() {
     fetchEvents();
   }, [currentPage, searchTerm, statusFilter, organizerFilter]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'Date TBD';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (error) {
+      return 'Date TBD';
+    }
   };
 
-  const formatPrice = (price: string) => {
+  const formatPrice = (price: string | null | undefined) => {
+    if (!price) return 'Free';
     const numPrice = parseFloat(price);
+    if (isNaN(numPrice)) return 'Free';
     return numPrice === 0 ? 'Free' : `₱${numPrice.toFixed(2)}`;
   };
 
-  const getAvailableSpots = (capacity: number, registrationCount: number) => {
-    const available = capacity - registrationCount;
+  const getAvailableSpots = (
+    capacity: number | null | undefined,
+    registrationCount: number | null | undefined
+  ) => {
+    const cap = capacity || 0;
+    const regCount = registrationCount || 0;
+    const available = cap - regCount;
     return available > 0 ? available : 0;
   };
 
@@ -271,7 +285,9 @@ export default function EventsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {events.map(event => {
-                const isEventPast = new Date(event.date) < new Date();
+                const isEventPast = event.date
+                  ? new Date(event.date) < new Date()
+                  : false;
                 const spotsLeft = getAvailableSpots(
                   event.capacity,
                   event.registration_count
@@ -312,8 +328,8 @@ export default function EventsPage() {
                               : 'bg-gray-100/90 text-gray-800 border-gray-200'
                           }`}
                         >
-                          {event.status.charAt(0).toUpperCase() +
-                            event.status.slice(1)}
+                          {(event.status || 'unknown').charAt(0).toUpperCase() +
+                            (event.status || 'unknown').slice(1)}
                         </span>
                       </div>
 
@@ -344,7 +360,7 @@ export default function EventsPage() {
                         </h3>
 
                         <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
-                          {event.details}
+                          {event.details || 'No details available'}
                         </p>
                       </div>
 
@@ -363,7 +379,7 @@ export default function EventsPage() {
                             <MapPin className="h-4 w-4 text-pink-600" />
                           </div>
                           <span className="text-sm font-medium truncate">
-                            {event.venue}
+                            {event.venue || 'Venue TBD'}
                           </span>
                         </div>
 
@@ -406,7 +422,7 @@ export default function EventsPage() {
           )}
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {totalPages > 1 && totalPages > 0 && (
             <div className="flex justify-center mt-16">
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-2">
                 <nav className="flex items-center space-x-1">
@@ -420,24 +436,26 @@ export default function EventsPage() {
                   </button>
 
                   <div className="flex items-center space-x-1 mx-2">
-                    {[...Array(totalPages)].map((_, index) => {
-                      const page = index + 1;
-                      const isCurrentPage = currentPage === page;
+                    {[...Array(Math.max(1, totalPages || 1))].map(
+                      (_, index) => {
+                        const page = index + 1;
+                        const isCurrentPage = currentPage === page;
 
-                      return (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-10 h-10 rounded-xl font-semibold transition-all duration-200 transform hover:scale-110 ${
-                            isCurrentPage
-                              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                              : 'text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      );
-                    })}
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-10 h-10 rounded-xl font-semibold transition-all duration-200 transform hover:scale-110 ${
+                              isCurrentPage
+                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
+                                : 'text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      }
+                    )}
                   </div>
 
                   <button

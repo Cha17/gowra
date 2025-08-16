@@ -22,24 +22,25 @@ import { useAuthContext } from '@/src/components/providers/NeonAuthProvider';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import Background from '@/src/components/ui/Background';
+import LoginPromptModal from '@/src/components/LoginPromptModal';
 
 interface Event {
   id: string;
   name: string;
   organizer: string;
-  details: string;
-  date: string;
-  image_url?: string;
-  venue: string;
-  status: string;
-  price: string;
-  capacity: number;
-  registration_deadline: string;
-  created_at: string;
-  updated_at: string;
-  registration_count: number;
-  paid_registrations: number;
-  pending_registrations: number;
+  details?: string | null;
+  date?: string | null;
+  image_url?: string | null;
+  venue?: string | null;
+  status?: string | null;
+  price?: string | null;
+  capacity?: number | null;
+  registration_deadline?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  registration_count?: number;
+  paid_registrations?: number;
+  pending_registrations?: number;
 }
 
 interface EventResponse {
@@ -69,6 +70,7 @@ export default function EventDetailPage() {
   const [registering, setRegistering] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [showLoginPromptModal, setShowLoginPromptModal] = useState(false);
   const [registrationForm, setRegistrationForm] = useState({
     name: '',
     email: '',
@@ -139,8 +141,7 @@ export default function EventDetailPage() {
 
   const handleOpenRegistrationModal = () => {
     if (!isAuthenticated) {
-      toast.error('Please log in to register for events');
-      router.push('/login');
+      setShowLoginPromptModal(true);
       return;
     }
 
@@ -293,11 +294,13 @@ export default function EventDetailPage() {
   }
 
   const availableSpots = getAvailableSpots(
-    event.capacity,
-    event.registration_count
+    event.capacity || 0,
+    event.registration_count || 0
   );
-  const eventPast = isEventPast(event.date);
-  const registrationClosed = isRegistrationClosed(event.registration_deadline);
+  const eventPast = isEventPast(event.date || '');
+  const registrationClosed = isRegistrationClosed(
+    event.registration_deadline || ''
+  );
   const canRegister =
     !eventPast &&
     !registrationClosed &&
@@ -334,16 +337,17 @@ export default function EventDetailPage() {
               <div className="absolute top-6 right-6">
                 <span
                   className={`px-4 py-2 rounded-full text-sm font-bold backdrop-blur-sm border ${
-                    event.status === 'published'
+                    (event.status || 'unknown') === 'published'
                       ? 'bg-green-100/90 text-green-800 border-green-200'
-                      : event.status === 'draft'
+                      : (event.status || 'unknown') === 'draft'
                       ? 'bg-yellow-100/90 text-yellow-800 border-yellow-200'
-                      : event.status === 'cancelled'
+                      : (event.status || 'unknown') === 'cancelled'
                       ? 'bg-red-100/90 text-red-800 border-red-200'
                       : 'bg-gray-100/90 text-gray-800 border-gray-200'
                   }`}
                 >
-                  {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                  {(event.status || 'unknown').charAt(0).toUpperCase() +
+                    (event.status || 'unknown').slice(1)}
                 </span>
               </div>
 
@@ -351,7 +355,7 @@ export default function EventDetailPage() {
               <div className="absolute top-6 left-6">
                 <div className="bg-white/95 backdrop-blur-sm rounded-full px-4 py-2 border border-white/50">
                   <span className="text-purple-600 font-bold text-lg">
-                    {formatPrice(event.price)}
+                    {formatPrice(event.price || '')}
                   </span>
                 </div>
               </div>
@@ -381,7 +385,7 @@ export default function EventDetailPage() {
                         Date & Time
                       </p>
                       <p className="text-gray-700 font-medium">
-                        {formatDate(event.date)}
+                        {formatDate(event.date || '')}
                       </p>
                     </div>
                   </div>
@@ -392,7 +396,9 @@ export default function EventDetailPage() {
                     </div>
                     <div>
                       <p className="font-bold text-gray-900 mb-1">Venue</p>
-                      <p className="text-gray-700 font-medium">{event.venue}</p>
+                      <p className="text-gray-700 font-medium">
+                        {event.venue || 'Venue TBD'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -434,7 +440,7 @@ export default function EventDetailPage() {
                         Registration Deadline
                       </p>
                       <p className="text-gray-700 font-medium">
-                        {formatDate(event.registration_deadline)}
+                        {formatDate(event.registration_deadline || '')}
                       </p>
                     </div>
                   </div>
@@ -536,7 +542,7 @@ export default function EventDetailPage() {
                 <div className="text-center mb-8">
                   <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl p-6 text-white mb-4">
                     <div className="text-4xl font-bold mb-2">
-                      {formatPrice(event.price)}
+                      {formatPrice(event.price || '')}
                     </div>
                     <p className="text-purple-100 font-medium">per ticket</p>
                   </div>
@@ -884,6 +890,14 @@ export default function EventDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Login Prompt Modal */}
+      <LoginPromptModal
+        isOpen={showLoginPromptModal}
+        onClose={() => setShowLoginPromptModal(false)}
+        title="Login Required"
+        message="You need to be logged in to register for this event. Please log in or create an account to continue."
+      />
     </>
   );
 }
