@@ -7,7 +7,9 @@ import {
   initAuthTables,
   authMiddleware,
   refreshAccessToken,
+  generateAccessToken,
 } from '../lib/auth';
+import { requireAuth } from '../middlewares/auth';
 import type { EnvBinding } from '../schema/env';
 
 // Define the context type for Hono
@@ -204,6 +206,102 @@ authRoutes.put('/profile', authMiddleware, async (c) => {
   } catch (error) {
     console.error('Update profile error:', error);
     return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Upgrade to organizer endpoint (protected)
+authRoutes.post('/upgrade-to-organizer', requireAuth, async (c) => {
+  try {
+    const user = c.get('user');
+    const body = await c.req.json();
+    const { 
+      organization_name, 
+      organization_type, 
+      event_types, 
+      organization_description, 
+      organization_website 
+    } = body;
+
+    // Validation
+    if (!organization_name || !organization_type) {
+      return c.json({ 
+        success: false, 
+        error: 'Organization name and type are required' 
+      }, 400);
+    }
+
+    if (!Array.isArray(event_types) || event_types.length === 0) {
+      return c.json({ 
+        success: false, 
+        error: 'At least one event type is required' 
+      }, 400);
+    }
+
+    const db = createDbClient({
+      connection_string: c.env.DATABASE_URL,
+    });
+
+    // Check if user is already an organizer
+    if (user.role === 'organizer') {
+      return c.json({ 
+        success: false, 
+        error: 'User is already an organizer' 
+      }, 400);
+    }
+
+    // Update user to organizer role
+    const updatedUser = await db
+      .updateTable('users')
+      .set({ 
+        role: 'organizer',
+        organization_name,
+        organization_type,
+        event_types: JSON.stringify(event_types),
+        organization_description: organization_description || null,
+        organization_website: organization_website || null,
+        organizer_since: new Date(),
+        updated_at: new Date()
+      })
+      .where('id', '=', user.id)
+      .returning([
+        'id', 'email', 'name', 'role', 'organization_name', 'organization_type',
+        'event_types', 'organization_description', 'organization_website', 
+        'organizer_since', 'created_at', 'updated_at'
+      ])
+      .executeTakeFirst();
+
+    if (updatedUser) {
+      // Generate new token with updated role
+      const newToken = await generateAccessToken({
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name || undefined,
+        role: 'organizer',
+        isAdmin: false
+      }, c.env.JWT_SECRET);
+      
+      return c.json({
+        success: true,
+        message: 'Successfully upgraded to organizer',
+        user: {
+          ...updatedUser,
+          event_types: JSON.parse(updatedUser.event_types || '[]'),
+          isAdmin: false
+        },
+        token: newToken // Return new token with updated role
+      });
+    } else {
+      return c.json({ 
+        success: false, 
+        error: 'Failed to upgrade user to organizer' 
+      }, 500);
+    }
+  } catch (error) {
+    console.error('Upgrade to organizer error:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Internal server error' 
+    }, 500);
   }
 });
 
