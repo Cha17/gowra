@@ -73,7 +73,7 @@ interface PaymentsResponse {
   };
 }
 
-export default function DashboardPage() {
+export default function MyEventsAndRegistrationsPage() {
   const { user, apiCallWithRefresh } = useAuthContext();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [recentPayments, setRecentPayments] = useState<Payment[]>([]);
@@ -81,6 +81,11 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<
     'overview' | 'events' | 'payments'
   >('overview');
+
+  // Set page title
+  useEffect(() => {
+    document.title = 'My Events & Registrations - Gowwra';
+  }, []);
 
   const fetchUserData = async () => {
     try {
@@ -175,10 +180,11 @@ export default function DashboardPage() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome back, {user?.name || 'User'}!
+              My Events & Registrations
             </h1>
             <p className="text-lg text-gray-600">
-              Here's what's happening with your events
+              Welcome back, {user?.name || 'User'}! Here's what's happening with
+              events you've registered for.
             </p>
           </div>
 

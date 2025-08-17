@@ -3,6 +3,15 @@
 import { useCallback, useState, useEffect } from 'react';
 import { isAdmin, type User, authApi, tokenManager } from '../lib/auth';
 
+// Organizer upgrade data type
+export interface OrganizerUpgradeData {
+  organization_name: string;
+  organization_type: string;
+  event_types: string[];
+  organization_description?: string;
+  organization_website?: string;
+}
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +47,8 @@ export function useAuth() {
             // Token is valid, get current user
             const result = await authApi.getCurrentUser(token);
             if (result.success && result.user) {
-              console.log('✅ User authenticated:', result.user.email);
+              console.log('✅ User authenticated:', result.user.email, 'Role:', result.user.role);
+              console.log('🔍 User data:', JSON.stringify(result.user, null, 2));
               setUser(result.user);
             } else {
               console.log('❌ Invalid token, attempting refresh...');
@@ -47,6 +57,7 @@ export function useAuth() {
                 console.log('✅ Token refreshed successfully');
                 tokenManager.setAccessToken(refreshResult.token);
                 if (refreshResult.user) {
+                  console.log('🔍 Refreshed user data:', JSON.stringify(refreshResult.user, null, 2));
                   setUser(refreshResult.user);
                 }
               } else {
@@ -222,6 +233,42 @@ export function useAuth() {
     return isAdmin(user);
   }, []);
 
+  const upgradeToOrganizer = useCallback(async (upgradeData: OrganizerUpgradeData) => {
+    setIsLoading(true);
+    try {
+      console.log('🔄 Upgrading user to organizer...');
+      
+      const result = await authApi.upgradeToOrganizer(upgradeData);
+      
+      if (result.success && result.user && result.token) {
+        console.log('✅ User upgraded to organizer successfully');
+        
+        // Update the user with new role and organizer data
+        setUser(result.user);
+        
+        // Store the new token and maintain refresh token
+        const currentRefreshToken = tokenManager.getRefreshToken();
+        if (currentRefreshToken) {
+          tokenManager.setTokens(result.token, currentRefreshToken);
+        } else {
+          tokenManager.setAccessToken(result.token);
+        }
+        
+        console.log('💾 New organizer token stored successfully');
+        
+        return { success: true, user: result.user };
+      } else {
+        console.log('❌ Upgrade failed:', result.error);
+        return { success: false, error: result.error || 'Upgrade failed' };
+      }
+    } catch (error) {
+      console.error('❌ Upgrade error:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Upgrade failed' };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   return {
     user,
     isLoading,
@@ -230,6 +277,7 @@ export function useAuth() {
     register,
     logout,
     updateProfile,
+    upgradeToOrganizer,
     isAdmin: checkIsAdmin(user),
     isAuthenticated: !!user,
     apiCallWithRefresh, // Expose for use in other components

@@ -5,6 +5,7 @@ import { NeonAuthProvider } from '@/src/components/providers/NeonAuthProvider';
 import { Toaster } from 'sonner';
 import Header from '@/src/components/navigation/Header';
 import Background from '@/src/components/ui/Background';
+import DebugAuthState from '@/src/components/DebugAuthState';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -37,6 +38,7 @@ export default function RootLayout({
           <Header />
           <main>{children}</main>
           <Toaster position="top-right" />
+          <DebugAuthState />
         </NeonAuthProvider>
       </body>
     </html>

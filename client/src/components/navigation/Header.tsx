@@ -6,7 +6,17 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Home, Calendar, User, Settings, LogOut, Menu, X } from 'lucide-react';
+import {
+  Home,
+  Calendar,
+  User,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  Building2,
+  Plus,
+} from 'lucide-react';
 import Background from '../ui/Background';
 import {
   DropdownMenu,
@@ -125,9 +135,16 @@ export default function Header() {
                   >
                     <DropdownMenuLabel className="px-3 py-2 bg-gray-50 border-b border-gray-100">
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-semibold leading-none text-gray-900">
-                          {user?.name || 'User'}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold leading-none text-gray-900">
+                            {user?.name || 'User'}
+                          </p>
+                          {user?.role === 'organizer' && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                              🎯 Organizer
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs leading-none text-gray-500">
                           {user?.email}
                         </p>
@@ -144,9 +161,52 @@ export default function Header() {
                         className="cursor-pointer text-gray-700 hover:text-blue-600"
                       >
                         <Calendar className="w-4 h-4 mr-2 text-gray-500" />
-                        Dashboard
+                        My Events & Registrations
                       </Link>
                     </DropdownMenuItem>
+
+                    {/* Organizer Features */}
+                    {user?.role === 'organizer' ? (
+                      <>
+                        <DropdownMenuItem
+                          asChild
+                          className="px-3 py-2 hover:bg-purple-50 focus:bg-purple-50"
+                        >
+                          <Link
+                            href="/organizer"
+                            className="cursor-pointer text-gray-700 hover:text-purple-600"
+                          >
+                            <Building2 className="w-4 h-4 mr-2 text-purple-500" />
+                            Manage My Events
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          asChild
+                          className="px-3 py-2 hover:bg-purple-50 focus:bg-purple-50"
+                        >
+                          <Link
+                            href="/organizer/events"
+                            className="cursor-pointer text-gray-700 hover:text-purple-600"
+                          >
+                            <Plus className="w-4 h-4 mr-2 text-purple-500" />
+                            My Events
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    ) : (
+                      <DropdownMenuItem
+                        asChild
+                        className="px-3 py-2 hover:bg-purple-50 focus:bg-purple-50"
+                      >
+                        <Link
+                          href="/organizer/upgrade"
+                          className="cursor-pointer text-gray-700 hover:text-purple-600"
+                        >
+                          <Building2 className="w-4 h-4 mr-2 text-purple-500" />
+                          Become Organizer
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
 
                     <DropdownMenuItem
                       asChild

@@ -21,6 +21,14 @@ export interface User {
   created_at: string;
   updated_at: string;
   isAdmin?: boolean;
+  // Organizer role fields
+  role?: 'user' | 'organizer';
+  organization_name?: string;
+  organization_type?: string;
+  event_types?: string[];
+  organization_description?: string;
+  organization_website?: string;
+  organizer_since?: string;
 }
 
 // API response types
@@ -32,6 +40,8 @@ export interface AuthResponse {
   refreshToken?: string;
   error?: string;
   isAdmin?: boolean;
+  // For upgrade response
+  needsUpgrade?: boolean;
 }
 
 // Refresh token response type
@@ -166,6 +176,42 @@ export const authApi = {
       const response = await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         headers,
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Network error. Please try again.',
+      };
+    }
+  },
+
+  // Upgrade user to organizer
+  async upgradeToOrganizer(upgradeData: {
+    organization_name: string;
+    organization_type: string;
+    event_types: string[];
+    organization_description?: string;
+    organization_website?: string;
+  }): Promise<AuthResponse> {
+    try {
+      const token = tokenManager.getToken();
+      if (!token) {
+        return {
+          success: false,
+          error: 'No authentication token found',
+        };
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/auth/upgrade-to-organizer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(upgradeData),
       });
 
       const data = await response.json();

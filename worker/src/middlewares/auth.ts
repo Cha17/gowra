@@ -36,8 +36,50 @@ export const requireAuth = async (c: Context<UserContext>, next: Next) => {
     
     // Ensure user has required fields
     if (result.user.id && result.user.email) {
-      c.set('user', result.user);
-      await next();
+      // Fetch fresh user data from database to get latest organizer info
+      const db = createDbClient({
+        connection_string: c.env.DATABASE_URL,
+      });
+      
+      let freshUser;
+      if (result.user.isAdmin) {
+        // For admin users, get from admin_users table
+        freshUser = await db
+          .selectFrom('admin_users')
+          .select(['id', 'email', 'name', 'created_at', 'updated_at'])
+          .where('id', '=', result.user.id)
+          .executeTakeFirst();
+        
+        if (freshUser) {
+          freshUser.isAdmin = true;
+        }
+      } else {
+        // For regular users, get from users table with organizer fields
+        freshUser = await db
+          .selectFrom('users')
+          .select([
+            'id', 'email', 'name', 'created_at', 'updated_at',
+            'role', 'organization_name', 'organization_type', 'event_types', 
+            'organization_description', 'organization_website', 'organizer_since'
+          ])
+          .where('id', '=', result.user.id)
+          .executeTakeFirst();
+        
+        if (freshUser) {
+          freshUser.isAdmin = false;
+          // Parse event_types JSON if it exists
+          if (freshUser.event_types) {
+            freshUser.event_types = JSON.parse(freshUser.event_types);
+          }
+        }
+      }
+      
+      if (freshUser) {
+        c.set('user', freshUser);
+        await next();
+      } else {
+        return c.json({ success: false, error: 'User not found in database' }, 401);
+      }
     } else {
       return c.json({ success: false, error: 'Invalid token payload' }, 401);
     }

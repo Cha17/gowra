@@ -453,7 +453,11 @@ export const getUserById = async (id: string, db: any): Promise<AuthResult> => {
     // Check regular users
     result = await db
       .selectFrom('users')
-      .select(['id', 'email', 'name', 'created_at', 'updated_at'])
+      .select([
+        'id', 'email', 'name', 'created_at', 'updated_at',
+        'role', 'organization_name', 'organization_type', 'event_types', 
+        'organization_description', 'organization_website', 'organizer_since'
+      ])
       .where('id', '=', id)
       .executeTakeFirst();
     
@@ -464,6 +468,13 @@ export const getUserById = async (id: string, db: any): Promise<AuthResult> => {
           id: result.id,
           email: result.email,
           name: result.name,
+          role: result.role,
+          organization_name: result.organization_name,
+          organization_type: result.organization_type,
+          event_types: result.event_types ? JSON.parse(result.event_types) : [],
+          organization_description: result.organization_description,
+          organization_website: result.organization_website,
+          organizer_since: result.organizer_since,
           created_at: result.created_at,
           updated_at: result.updated_at,
           isAdmin: false
@@ -499,7 +510,8 @@ export const refreshAccessToken = async (refreshToken: string, db: any, env: Env
       id: userResult.user.id,
       email: userResult.user.email,
       name: userResult.user.name,
-      isAdmin: userResult.user.isAdmin
+      isAdmin: userResult.user.isAdmin,
+      role: userResult.user.role // Include role in new token
     }, env.JWT_SECRET);
 
     return {

@@ -146,7 +146,7 @@ authRoutes.post('/refresh', async (c) => {
 });
 
 // Get current user endpoint (protected)
-authRoutes.get('/me', authMiddleware, async (c) => {
+authRoutes.get('/me', requireAuth, async (c) => {
   try {
     const user = c.get('user');
     

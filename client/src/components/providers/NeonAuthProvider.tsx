@@ -3,6 +3,7 @@
 import { ReactNode, createContext, useContext } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { User } from '../../lib/auth';
+import { OrganizerUpgradeData } from '../../hooks/useAuth';
 
 interface AuthContextType {
   user: User | null;
@@ -21,6 +22,9 @@ interface AuthContextType {
   updateProfile: (
     name: string
   ) => Promise<{ success: boolean; error?: string }>;
+  upgradeToOrganizer: (
+    upgradeData: OrganizerUpgradeData
+  ) => Promise<{ success: boolean; user?: User; error?: string }>;
   isAdmin: boolean;
   isAuthenticated: boolean;
   apiCallWithRefresh: <T>(apiCall: (token: string) => Promise<T>) => Promise<T>;
