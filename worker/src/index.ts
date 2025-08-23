@@ -10,7 +10,7 @@ import { createDbClient } from "./db/types";
 // Import route handlers
 import { authRoutes } from "./routes/auth";
 import { adminRoutes } from "./routes/admin";
-import { eventRoutes } from "./routes/events";
+import { eventRoutes } from "./routes/events-simple";
 import { registrationRoutes } from "./routes/registrations";
 import { paymentRoutes } from "./routes/payments";
 

@@ -238,21 +238,23 @@ export function useAuth() {
     try {
       console.log('🔄 Upgrading user to organizer...');
       
-      const result = await authApi.upgradeToOrganizer(upgradeData);
+      const result = await apiCallWithRefresh(async (token: string) => {
+        return await authApi.upgradeToOrganizer(upgradeData, token);
+      });
       
-      if (result.success && result.user && result.token) {
-        console.log('✅ User upgraded to organizer successfully');
-        
-        // Update the user with new role and organizer data
-        setUser(result.user);
-        
-        // Store the new token and maintain refresh token
-        const currentRefreshToken = tokenManager.getRefreshToken();
-        if (currentRefreshToken) {
-          tokenManager.setTokens(result.token, currentRefreshToken);
-        } else {
-          tokenManager.setAccessToken(result.token);
-        }
+              if (result.success && result.user && result.newToken) {
+          console.log('✅ User upgraded to organizer successfully');
+          
+          // Update the user with new role and organizer data
+          setUser(result.user);
+          
+          // Store the new token and maintain refresh token
+          const currentRefreshToken = tokenManager.getRefreshToken();
+          if (currentRefreshToken) {
+            tokenManager.setTokens(result.newToken, currentRefreshToken);
+          } else {
+            tokenManager.setAccessToken(result.newToken);
+          }
         
         console.log('💾 New organizer token stored successfully');
         
@@ -267,7 +269,7 @@ export function useAuth() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [apiCallWithRefresh]);
 
   return {
     user,

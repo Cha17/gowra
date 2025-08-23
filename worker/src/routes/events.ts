@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { createDbClient } from '../db/types';
-import { requireOrganizer, requireEventOwnership } from '../middlewares/auth';
+import { requireAuth, requireOrganizer, requireEventOwnership } from '../middlewares/auth';
 import type { EnvBinding } from '../schema/env';
 
 const eventRoutes = new Hono<{ Bindings: EnvBinding }>();
@@ -92,76 +92,7 @@ eventRoutes.get('/', async (c) => {
   }
 });
 
-// Create new event (organizers only)
-eventRoutes.post('/', requireOrganizer, async (c) => {
-  try {
-    const user = c.get('user');
-    const body = await c.req.json();
-    const { 
-      name, 
-      details, 
-      date, 
-      imageUrl, 
-      venue, 
-      price, 
-      capacity, 
-      registrationDeadline 
-    } = body;
-    
-    // Validation
-    if (!name || !date || !venue) {
-      return c.json({
-        success: false,
-        error: 'Name, date, and venue are required' 
-      }, 400);
-    }
-    
-    const db = createDbClient({
-      connection_string: c.env.DATABASE_URL,
-    });
-    
-    // Create new event with organizer_id
-    const newEvent = await db
-      .insertInto('events')
-      .values({
-        name,
-        organizer: user.name || user.email, // Keep legacy field for compatibility
-        details: details || null,
-        date: new Date(date),
-        image_url: imageUrl || null,
-        venue,
-        status: 'draft',
-        price: price || 0,
-        capacity: capacity || null,
-        registration_deadline: registrationDeadline ? new Date(registrationDeadline) : null,
-        created_at: new Date(),
-        updated_at: new Date()
-      })
-      .returningAll()
-      .executeTakeFirst();
-    
-    if (newEvent) {
-      return c.json({
-        success: true,
-        message: 'Event created successfully',
-        event: newEvent
-      });
-    } else {
-      return c.json({ 
-        success: false, 
-        error: 'Failed to create event' 
-      }, 500);
-    }
-  } catch (error) {
-    console.error('Create event error:', error);
-      return c.json({
-        success: false,
-      error: 'Internal server error' 
-      }, 500);
-    }
-});
-
-// Get single event by ID (public, no authentication required)
+// Get single event by ID (no authentication required)
 eventRoutes.get('/:id', async (c) => {
   try {
     const eventId = c.req.param('id');
@@ -185,9 +116,7 @@ eventRoutes.get('/:id', async (c) => {
     
     return c.json({
       success: true,
-      data: {
-        event
-      }
+      event
     });
   } catch (error) {
     console.error('Get event error:', error);
@@ -198,29 +127,70 @@ eventRoutes.get('/:id', async (c) => {
   }
 });
 
-// Get organizer's events (organizers only)
-eventRoutes.get('/my-events', requireOrganizer, async (c) => {
+// Create new event (organizers only)
+eventRoutes.post('/', requireAuth, requireOrganizer, async (c) => {
   try {
     const user = c.get('user');
+    const body = await c.req.json();
+    const { 
+      name, 
+      details, 
+      date, 
+      imageUrl, 
+      venue, 
+      price, 
+      capacity, 
+      registrationDeadline,
+      status 
+    } = body;
+
+    // Validation
+    if (!name || !date || !venue) {
+      return c.json({
+        success: false,
+        error: 'Name, date, and venue are required' 
+      }, 400);
+    }
+    
     const db = createDbClient({
       connection_string: c.env.DATABASE_URL,
     });
-
-    // Get events owned by this organizer
-    const events = await db
-      .selectFrom('events')
-      .selectAll()
-      .where('organizer', '=', user.name || user.email) // Use legacy organizer field for now
-      .orderBy('created_at', 'desc')
-      .execute();
-
-    return c.json({
-      success: true,
-      events,
-      count: events.length
-    });
+    
+    // Create event
+    const newEvent = await db
+      .insertInto('events')
+      .values({
+        name,
+        details: details || null,
+        date: new Date(date),
+        image_url: imageUrl || null,
+        venue,
+        status: status || 'draft',
+        price: price || 0,
+        capacity: capacity || null,
+        registration_deadline: registrationDeadline ? new Date(registrationDeadline) : null,
+        organizer: user.name || '',
+        organizer_id: user.id,
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+      .returningAll()
+      .executeTakeFirst();
+    
+    if (newEvent) {
+      return c.json({
+        success: true,
+        message: 'Event created successfully',
+        event: newEvent
+      });
+    } else {
+      return c.json({
+        success: false,
+        error: 'Failed to create event' 
+      }, 500);
+    }
   } catch (error) {
-    console.error('Get my events error:', error);
+    console.error('Create event error:', error);
     return c.json({
       success: false,
       error: 'Internal server error' 
@@ -228,8 +198,106 @@ eventRoutes.get('/my-events', requireOrganizer, async (c) => {
   }
 });
 
+// Get organizer's events (organizers only)
+eventRoutes.get('/my-events', requireAuth, requireOrganizer, async (c) => {
+  try {
+    const user = c.get('user');
+    console.log('🔍 User context:', { id: user.id, name: user.name, role: user.role });
+    
+    const db = createDbClient({
+      connection_string: c.env.DATABASE_URL,
+    });
+
+    // Get events owned by this organizer - using legacy organizer field temporarily
+    console.log('🔍 Querying events for organizer:', user.id, 'name:', user.name);
+    const events = await db
+      .selectFrom('events')
+      .selectAll()
+      .where((eb) => eb('organizer', '=', user.name || ''))
+      .orderBy('created_at', 'desc')
+      .execute();
+    console.log('✅ Events query completed, found:', events.length);
+
+    return c.json({
+      success: true,
+      events
+    });
+  } catch (error) {
+    console.error('Get my events error:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Internal server error' 
+    }, 500);
+  }
+});
+
+// Get organizer dashboard analytics (organizers only)
+eventRoutes.get('/dashboard-analytics', requireAuth, requireOrganizer, async (c) => {
+  try {
+    const user = c.get('user');
+    console.log('🔍 User context for analytics:', { id: user.id, name: user.name, role: user.role });
+    
+    const db = createDbClient({
+      connection_string: c.env.DATABASE_URL,
+    });
+
+    // Get events owned by this organizer - using legacy organizer field temporarily
+    console.log('🔍 Querying events for organizer:', user.id, 'name:', user.name);
+    const events = await db
+      .selectFrom('events')
+      .selectAll()
+      .where((eb) => eb('organizer', '=', user.name || ''))
+      .execute();
+    console.log('✅ Events query completed, found:', events.length);
+
+    // Get total registrations for all organizer's events
+    const eventIds = events.map(e => e.id);
+    let totalAttendees = 0;
+    let activeEvents = 0;
+
+    if (eventIds.length > 0) {
+      const registrations = await db
+        .selectFrom('registrations')
+        .selectAll()
+        .where((eb) => eb('event_id', 'in', eventIds))
+        .execute();
+      
+      totalAttendees = registrations.length;
+    }
+
+    // Calculate statistics
+    const totalEvents = events.length;
+    activeEvents = events.filter(e => e.status === 'published').length;
+    
+    // Calculate average attendance percentage
+    let avgAttendance = 0;
+    if (totalEvents > 0) {
+      const totalCapacity = events.reduce((sum, e) => sum + (e.capacity || 0), 0);
+      if (totalCapacity > 0) {
+        avgAttendance = Math.round((totalAttendees / totalCapacity) * 100);
+      }
+    }
+
+    return c.json({
+      success: true,
+      analytics: {
+        totalEvents,
+        totalAttendees,
+        avgAttendance,
+        activeEvents
+      }
+    });
+  } catch (error) {
+    console.error('Get dashboard analytics error:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Internal server error' 
+    }, 500);
+  }
+});
+
 // Update event (event owner only)
-eventRoutes.put('/:id', requireEventOwnership, async (c) => {
+eventRoutes.put('/:id', requireAuth, requireEventOwnership, async (c) => {
   try {
     const eventId = c.req.param('id');
     const body = await c.req.json();
@@ -270,7 +338,7 @@ eventRoutes.put('/:id', requireEventOwnership, async (c) => {
         price: price || 0,
         capacity: capacity || null,
         registration_deadline: registrationDeadline ? new Date(registrationDeadline) : null,
-      updated_at: new Date()
+        updated_at: new Date()
       })
       .where('id', '=', eventId)
       .returningAll()
@@ -298,7 +366,7 @@ eventRoutes.put('/:id', requireEventOwnership, async (c) => {
 });
 
 // Delete event (event owner only)
-eventRoutes.delete('/:id', requireEventOwnership, async (c) => {
+eventRoutes.delete('/:id', requireAuth, requireEventOwnership, async (c) => {
   try {
     const eventId = c.req.param('id');
     const db = createDbClient({
@@ -312,13 +380,13 @@ eventRoutes.delete('/:id', requireEventOwnership, async (c) => {
       .execute();
     
     if (result.length > 0) {
-    return c.json({
-      success: true,
-      message: 'Event deleted successfully'
-    });
+      return c.json({
+        success: true,
+        message: 'Event deleted successfully'
+      });
     } else {
-    return c.json({
-      success: false,
+      return c.json({
+        success: false,
         error: 'Event not found or already deleted' 
       }, 404);
     }

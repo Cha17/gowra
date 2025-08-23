@@ -52,38 +52,38 @@ export const events = pgTable('events', {
   
   details: text('details'),
   date: timestamp('date').notNull(),
-  imageUrl: varchar('image_url', { length: 500 }),
+  image_url: varchar('image_url', { length: 500 }),
   venue: varchar('venue', { length: 255 }).notNull(),
   status: eventStatusEnum('status').default('draft').notNull(),
   price: decimal('price', { precision: 10, scale: 2 }).default('0').notNull(),
   capacity: integer('capacity'),
-  registrationDeadline: timestamp('registration_deadline'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  registration_deadline: timestamp('registration_deadline'),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
 });
 
 // Registrations table
 export const registrations = pgTable('registrations', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }), // References users table
-  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
-  paymentStatus: paymentStatusEnum('payment_status').default('pending').notNull(),
-  paymentReference: varchar('payment_reference', { length: 255 }),
-  paymentAmount: decimal('payment_amount', { precision: 10, scale: 2 }).notNull(),
-  registrationDate: timestamp('registration_date').defaultNow().notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  event_id: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  payment_status: paymentStatusEnum('payment_status').default('pending').notNull(),
+  payment_reference: varchar('payment_reference', { length: 255 }),
+  payment_amount: decimal('payment_amount', { precision: 10, scale: 2 }).notNull(),
+  registration_date: timestamp('registration_date').defaultNow().notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull(),
 });
 
 // Payment History table
 export const payment_history = pgTable('payment_history', {
   id: uuid('id').primaryKey().defaultRandom(),
-  registrationId: uuid('registration_id').notNull().references(() => registrations.id, { onDelete: 'cascade' }),
-  paymentReference: varchar('payment_reference', { length: 255 }).notNull(),
+  registration_id: uuid('registration_id').notNull().references(() => registrations.id, { onDelete: 'cascade' }),
+  payment_reference: varchar('payment_reference', { length: 255 }).notNull(),
   amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
   status: varchar('status', { length: 50 }).notNull(),
-  paymentMethod: varchar('payment_method', { length: 100 }),
-  transactionDate: timestamp('transaction_date'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  payment_method: varchar('payment_method', { length: 100 }),
+  transaction_date: timestamp('transaction_date'),
+  created_at: timestamp('created_at').defaultNow().notNull(),
 });
 
 // Export types for use in the application

@@ -66,14 +66,20 @@ class ApiClient {
 export const apiClient = new ApiClient(API_BASE_URL);
 
 export const API_ENDPOINTS = {
+  // Auth endpoints
+  login: '/api/auth/login',
+  register: '/api/auth/register',
+  logout: '/api/auth/logout',
+  refresh: '/api/auth/refresh',
+  me: '/api/auth/me',
+  upgradeToOrganizer: '/api/auth/upgrade-to-organizer',
+  
+  // Event endpoints
   events: '/api/events',
   event: (id: string) => `/api/events/${id}`,
-  registrations: '/api/registrations',
-  registration: (id: string) => `/api/registrations/${id}`,
-  payments: '/api/payments',
-  payment: (id: string) => `/api/payments/${id}`,
-  auth: {
-    verify: '/api/auth/verify',
-    profile: '/api/auth/profile',
-  },
-} as const;
+  myEvents: '/api/events/my-events',
+  dashboardAnalytics: '/api/events/dashboard-analytics',
+  
+  // Admin endpoints (if needed)
+  admin: '/api/admin',
+};

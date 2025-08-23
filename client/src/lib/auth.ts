@@ -42,6 +42,7 @@ export interface AuthResponse {
   isAdmin?: boolean;
   // For upgrade response
   needsUpgrade?: boolean;
+  newToken?: string;
 }
 
 // Refresh token response type
@@ -195,10 +196,10 @@ export const authApi = {
     event_types: string[];
     organization_description?: string;
     organization_website?: string;
-  }): Promise<AuthResponse> {
+  }, token?: string): Promise<AuthResponse> {
     try {
-      const token = tokenManager.getToken();
-      if (!token) {
+      const authToken = token || tokenManager.getToken();
+      if (!authToken) {
         return {
           success: false,
           error: 'No authentication token found',
@@ -209,7 +210,7 @@ export const authApi = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify(upgradeData),
       });

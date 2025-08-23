@@ -39,6 +39,36 @@ export type EventStatus = 'draft' | 'published' | 'cancelled' | 'completed';
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 export type UserRole = 'user' | 'organizer';
 
+export interface WorkerUser {
+  id: string;
+  email: string;
+  name?: string;
+  role: UserRole;
+  organization_name?: string;
+  organization_type?: string;
+  event_types?: string[];
+  organization_description?: string;
+  organization_website?: string;
+  organizer_since?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CleanUser {
+  id: string;
+  email: string;
+  name?: string;
+  role: UserRole;
+  organization_name?: string;
+  organization_type?: string;
+  event_types?: string[];
+  organization_description?: string;
+  organization_website?: string;
+  organizer_since?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Main database interface
 export interface Database {
 	users: KyselifyTable<typeof schema.users>;

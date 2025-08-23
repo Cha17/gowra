@@ -217,7 +217,6 @@ authRoutes.post('/upgrade-to-organizer', requireAuth, async (c) => {
     const { 
       organization_name, 
       organization_type, 
-      event_types, 
       organization_description, 
       organization_website 
     } = body;
@@ -230,12 +229,7 @@ authRoutes.post('/upgrade-to-organizer', requireAuth, async (c) => {
       }, 400);
     }
 
-    if (!Array.isArray(event_types) || event_types.length === 0) {
-      return c.json({ 
-        success: false, 
-        error: 'At least one event type is required' 
-      }, 400);
-    }
+
 
     const db = createDbClient({
       connection_string: c.env.DATABASE_URL,
@@ -256,7 +250,6 @@ authRoutes.post('/upgrade-to-organizer', requireAuth, async (c) => {
         role: 'organizer',
         organization_name,
         organization_type,
-        event_types: JSON.stringify(event_types),
         organization_description: organization_description || null,
         organization_website: organization_website || null,
         organizer_since: new Date(),
@@ -265,7 +258,7 @@ authRoutes.post('/upgrade-to-organizer', requireAuth, async (c) => {
       .where('id', '=', user.id)
       .returning([
         'id', 'email', 'name', 'role', 'organization_name', 'organization_type',
-        'event_types', 'organization_description', 'organization_website', 
+        'organization_description', 'organization_website', 
         'organizer_since', 'created_at', 'updated_at'
       ])
       .executeTakeFirst();
@@ -285,10 +278,9 @@ authRoutes.post('/upgrade-to-organizer', requireAuth, async (c) => {
         message: 'Successfully upgraded to organizer',
         user: {
           ...updatedUser,
-          event_types: JSON.parse(updatedUser.event_types || '[]'),
           isAdmin: false
         },
-        token: newToken // Return new token with updated role
+        newToken: newToken // Return new token with updated role
       });
     } else {
       return c.json({ 

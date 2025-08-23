@@ -2,7 +2,7 @@
 
 import { useAuthContext } from '@/src/components/providers/NeonAuthProvider';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Building2,
   Plus,
@@ -13,10 +13,26 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Background from '@/src/components/ui/Background';
+import { apiClient, API_ENDPOINTS } from '@/src/lib/api';
+import { toast } from 'sonner';
+
+interface DashboardAnalytics {
+  totalEvents: number;
+  totalAttendees: number;
+  avgAttendance: number;
+  activeEvents: number;
+}
 
 export default function OrganizerDashboard() {
   const { user, isAuthenticated } = useAuthContext();
   const router = useRouter();
+  const [analytics, setAnalytics] = useState<DashboardAnalytics>({
+    totalEvents: 0,
+    totalAttendees: 0,
+    avgAttendance: 0,
+    activeEvents: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
   // Set page title
   useEffect(() => {
@@ -36,6 +52,36 @@ export default function OrganizerDashboard() {
       router.push('/organizer/upgrade');
     }
   }, [isAuthenticated, user?.role, router]);
+
+  // Load dashboard analytics
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      if (!isAuthenticated || user?.role !== 'organizer') return;
+
+      try {
+        setLoading(true);
+        const response = await apiClient.get<{
+          success: boolean;
+          analytics: DashboardAnalytics;
+        }>(API_ENDPOINTS.dashboardAnalytics);
+
+        if (
+          response &&
+          (response as any).success &&
+          (response as any).analytics
+        ) {
+          setAnalytics((response as any).analytics);
+        }
+      } catch (error) {
+        console.error('Failed to load analytics:', error);
+        toast.error('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAnalytics();
+  }, [isAuthenticated, user?.role]);
 
   if (!isAuthenticated || user?.role !== 'organizer') {
     return null;
@@ -94,19 +140,9 @@ export default function OrganizerDashboard() {
 
               <div className="bg-gradient-to-r from-pink-50 to-orange-50 rounded-2xl p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Event Types
+                  Organizer Info
                 </h3>
-                <div className="flex flex-wrap gap-2">
-                  {user.event_types?.map((type, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium"
-                    >
-                      {type}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-gray-600 text-sm mt-2">
+                <p className="text-gray-600 text-sm">
                   Organizer since:{' '}
                   {user.organizer_since
                     ? new Date(user.organizer_since).toLocaleDateString()
@@ -176,7 +212,9 @@ export default function OrganizerDashboard() {
                 <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Calendar className="w-6 h-6 text-purple-600" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-1">0</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-1">
+                  {loading ? '...' : analytics.totalEvents}
+                </h3>
                 <p className="text-gray-600 text-sm">Total Events</p>
               </div>
 
@@ -184,7 +222,9 @@ export default function OrganizerDashboard() {
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Users className="w-6 h-6 text-blue-600" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-1">0</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-1">
+                  {loading ? '...' : analytics.totalAttendees}
+                </h3>
                 <p className="text-gray-600 text-sm">Total Attendees</p>
               </div>
 
@@ -192,7 +232,9 @@ export default function OrganizerDashboard() {
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <TrendingUp className="w-6 h-6 text-green-600" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-1">0%</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-1">
+                  {loading ? '...' : `${analytics.avgAttendance}%`}
+                </h3>
                 <p className="text-gray-600 text-sm">Avg. Attendance</p>
               </div>
 
@@ -200,7 +242,9 @@ export default function OrganizerDashboard() {
                 <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Building2 className="w-6 h-6 text-orange-600" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-1">1</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-1">
+                  {loading ? '...' : analytics.activeEvents}
+                </h3>
                 <p className="text-gray-600 text-sm">Active Events</p>
               </div>
             </div>

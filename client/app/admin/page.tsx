@@ -20,7 +20,6 @@ import {
   Trash2,
   TrendingUp,
   Activity,
-  DollarSign,
 } from 'lucide-react';
 import { ProtectedRoute } from '@/src/components/auth/ProtectedRoute';
 
