@@ -347,10 +347,10 @@ export default function UpgradeToOrganizerModal({
                 <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
                 Access to event analytics
               </li>
-              <li className="flex items-center gap-2">
+              {/* <li className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
                 Professional event management tools
-              </li>
+              </li> */}
             </ul>
           </div>
 

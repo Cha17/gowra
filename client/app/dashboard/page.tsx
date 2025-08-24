@@ -84,7 +84,7 @@ export default function MyEventsAndRegistrationsPage() {
 
   // Set page title
   useEffect(() => {
-    document.title = 'My Events & Registrations - Gowwra';
+    document.title = 'My Tickets - Gowwra';
   }, []);
 
   const fetchUserData = async () => {
@@ -180,7 +180,7 @@ export default function MyEventsAndRegistrationsPage() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              My Events & Registrations
+              My Tickets
             </h1>
             <p className="text-lg text-gray-600">
               Welcome back, {user?.name || 'User'}! Here's what's happening with

@@ -337,6 +337,32 @@ export default function EditEventPage() {
                       placeholder="https://example.com/image.jpg"
                       className="w-full px-4 py-3 border-2 text-gray-900 placeholder-gray-400 border-gray-300 rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-200 focus:border-purple-500 transition-all hover:border-purple-400"
                     />
+                    {form.imageUrl && (
+                      <div className="mt-2">
+                        <div className="text-xs text-gray-500 mb-2">
+                          Current image: {form.imageUrl}
+                        </div>
+                        <div className="w-32 h-24 bg-gray-100 rounded-lg overflow-hidden border">
+                          <img
+                            src={form.imageUrl}
+                            alt="Current event image"
+                            className="w-full h-full object-cover"
+                            onError={e => {
+                              e.currentTarget.style.display = 'none';
+                              const nextElement =
+                                e.currentTarget.nextElementSibling;
+                              if (nextElement) {
+                                (nextElement as HTMLElement).style.display =
+                                  'flex';
+                              }
+                            }}
+                          />
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                            <ImageIcon className="w-6 h-6" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

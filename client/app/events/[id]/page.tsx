@@ -723,7 +723,7 @@ export default function EventDetailPage() {
                                 e.target.value
                               )
                             }
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                             placeholder="Enter your full name"
                           />
                         </div>
@@ -748,7 +748,7 @@ export default function EventDetailPage() {
                                 e.target.value
                               )
                             }
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                             placeholder="Enter your email address"
                           />
                         </div>

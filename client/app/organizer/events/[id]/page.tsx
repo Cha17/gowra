@@ -71,6 +71,10 @@ export default function EventDetailPage({
   const [loadingAnalytics, setLoadingAnalytics] = useState<boolean>(false);
   const [deleting, setDeleting] = useState<boolean>(false);
   const [updatingStatus, setUpdatingStatus] = useState<boolean>(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
+  const [deleteReason, setDeleteReason] = useState<string>('');
+  const [showStatusConfirm, setShowStatusConfirm] = useState<boolean>(false);
+  const [pendingStatus, setPendingStatus] = useState<string>('');
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -163,25 +167,35 @@ export default function EventDetailPage({
   }, [event, isAuthenticated, user?.role, eventId]);
 
   const handleDelete = async () => {
-    if (!confirm('Delete this event? This cannot be undone.')) return;
+    if (!deleteReason.trim()) {
+      toast.error('Please provide a reason for archiving this event');
+      return;
+    }
+
     try {
       setDeleting(true);
-      const res = await apiClient.delete<{
+      // Instead of deleting, we'll archive the event by updating its status
+      const res = await apiClient.put<{
         success: boolean;
         message?: string;
-      }>(API_ENDPOINTS.event(eventId));
+      }>(API_ENDPOINTS.event(eventId), {
+        ...event,
+        status: 'archived',
+      });
 
       if ((res as any).success) {
-        toast.success('Event deleted successfully');
+        toast.success('Event archived successfully');
         router.push('/organizer/events');
       } else {
-        toast.error('Failed to delete event');
+        toast.error('Failed to archive event');
       }
     } catch (e) {
-      console.error('Delete error:', e);
-      toast.error('Failed to delete event');
+      console.error('Archive error:', e);
+      toast.error('Failed to archive event');
     } finally {
       setDeleting(false);
+      setShowDeleteConfirm(false);
+      setDeleteReason('');
     }
   };
 
@@ -212,7 +226,18 @@ export default function EventDetailPage({
       toast.error('Failed to update event status');
     } finally {
       setUpdatingStatus(false);
+      setShowStatusConfirm(false);
+      setPendingStatus('');
     }
+  };
+
+  const confirmStatusChange = (newStatus: string) => {
+    setPendingStatus(newStatus);
+    setShowStatusConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    setShowDeleteConfirm(true);
   };
 
   const getStatusIcon = (status: string) => {
@@ -265,13 +290,6 @@ export default function EventDetailPage({
             <h1 className="text-2xl font-bold text-gray-900 mb-4">
               Event Not Found
             </h1>
-            <Link
-              href="/organizer/events"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to My Events
-            </Link>
           </div>
         </div>
       </>
@@ -296,14 +314,6 @@ export default function EventDetailPage({
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
-            <Link
-              href="/organizer/events"
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to My Events
-            </Link>
-
             <div className="flex items-center gap-3 mb-4">
               {getStatusIcon(event.status || 'draft')}
               <span className="capitalize text-gray-600 text-sm">
@@ -361,38 +371,82 @@ export default function EventDetailPage({
                 </h2>
 
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3 text-gray-700">
-                    <Calendar className="w-5 h-5 text-purple-600 flex-shrink-0" />
-                    <span className="text-sm">{formattedDate}</span>
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">
+                        Date & Time
+                      </p>
+                      <p className="text-sm text-gray-600">{formattedDate}</p>
+                    </div>
                   </div>
 
                   {event.venue && (
-                    <div className="flex items-center gap-3 text-gray-700">
-                      <MapPin className="w-5 h-5 text-purple-600 flex-shrink-0" />
-                      <span className="text-sm">{event.venue}</span>
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-5 h-5 text-pink-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          Venue
+                        </p>
+                        <p className="text-sm text-gray-600">{event.venue}</p>
+                      </div>
                     </div>
                   )}
 
                   {event.capacity && (
-                    <div className="flex items-center gap-3 text-gray-700">
-                      <Users className="w-5 h-5 text-purple-600 flex-shrink-0" />
-                      <span className="text-sm">{event.capacity} slots</span>
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Users className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          Capacity
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {event.capacity} slots
+                        </p>
+                      </div>
                     </div>
                   )}
 
                   {event.price !== null && event.price !== undefined && (
-                    <div className="flex items-center gap-3 text-gray-700">
-                      <Tag className="w-5 h-5 text-purple-600 flex-shrink-0" />
-                      <span className="text-sm">₱{event.price}</span>
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Tag className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          Price
+                        </p>
+                        <p className="text-sm text-gray-600">₱{event.price}</p>
+                      </div>
                     </div>
                   )}
 
-                  <div className="flex items-center gap-3 text-gray-700">
-                    <Clock className="w-5 h-5 text-purple-600 flex-shrink-0" />
-                    <span className="text-sm">
-                      Created{' '}
-                      {new Date(event.created_at || '').toLocaleDateString()}
-                    </span>
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-5 h-5 text-gray-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">
+                        Created On
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {new Date(event.created_at || '').toLocaleDateString(
+                          'en-US',
+                          {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          }
+                        )}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -594,7 +648,11 @@ export default function EventDetailPage({
                   </Link>
 
                   <button
-                    onClick={handleStatusToggle}
+                    onClick={() =>
+                      confirmStatusChange(
+                        event.status === 'published' ? 'draft' : 'published'
+                      )
+                    }
                     disabled={updatingStatus}
                     className={`flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
                       event.status === 'published'
@@ -610,12 +668,12 @@ export default function EventDetailPage({
                   </button>
 
                   <button
-                    onClick={handleDelete}
+                    onClick={confirmDelete}
                     disabled={deleting}
                     className="flex items-center justify-center gap-2 px-4 py-3 text-red-700 hover:text-white hover:bg-red-600 border border-red-200 rounded-xl text-sm transition-colors disabled:opacity-50"
                   >
                     <Trash2 className="w-4 h-4" />
-                    {deleting ? 'Deleting...' : 'Delete Event'}
+                    Archive Event
                   </button>
                 </div>
               </div>
@@ -623,6 +681,90 @@ export default function EventDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Status Change Confirmation Modal */}
+      {showStatusConfirm && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-white/10 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Confirm Status Change
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to{' '}
+              {pendingStatus === 'published' ? 'publish' : 'move to draft'} this
+              event?
+              {pendingStatus === 'published'
+                ? ' This will make it visible to the public.'
+                : ' This will hide it from public view.'}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowStatusConfirm(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleStatusToggle}
+                disabled={updatingStatus}
+                className={`flex-1 px-4 py-2 rounded-xl transition-colors ${
+                  pendingStatus === 'published'
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : 'bg-yellow-600 text-white hover:bg-yellow-700'
+                } disabled:opacity-50`}
+              >
+                {updatingStatus ? 'Updating...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Archive Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-white/10 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Archive Event
+            </h3>
+            <p className="text-gray-600 mb-4">
+              This will archive the event instead of permanently deleting it.
+              You can restore it later if needed.
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Type "Archive" to confirm *
+              </label>
+              <input
+                type="text"
+                value={deleteReason}
+                onChange={e => setDeleteReason(e.target.value)}
+                placeholder="Type 'Archive' to confirm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                required
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeleteReason('');
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting || deleteReason.trim() !== 'Archive'}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {deleting ? 'Archiving...' : 'Archive Event'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

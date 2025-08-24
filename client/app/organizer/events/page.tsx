@@ -9,11 +9,7 @@ import {
   MapPin,
   Image as ImageIcon,
   Users,
-  Ticket,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
+  Tag,
 } from 'lucide-react';
 import Link from 'next/link';
 import Background from '@/src/components/ui/Background';
@@ -89,19 +85,6 @@ export default function OrganizerEventsPage() {
     loadEvents();
   }, [canRender]);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'published':
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'draft':
-        return <AlertCircle className="w-4 h-4 text-yellow-600" />;
-      case 'cancelled':
-        return <XCircle className="w-4 h-4 text-red-600" />;
-      default:
-        return <AlertCircle className="w-4 h-4 text-gray-600" />;
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'published':
@@ -120,171 +103,147 @@ export default function OrganizerEventsPage() {
   return (
     <>
       <Background />
-      <div className="min-h-screen py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen py-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
                   My Events
                 </h1>
-                <p className="text-xl text-gray-600">
-                  Manage all your created events
-                </p>
+                <p className="text-gray-600">Manage all your created events</p>
               </div>
 
               <Link
                 href="/organizer/events/create"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-2xl hover:from-purple-700 hover:to-pink-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4" />
                 Create Event
               </Link>
             </div>
           </div>
 
           {/* Events List */}
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8">
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-pulse text-gray-500">
-                  Loading events...
-                </div>
+          {/* <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6"> */}
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-pulse text-gray-500">
+                Loading events...
               </div>
-            ) : events.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-20 h-20 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Calendar className="w-10 h-10 text-purple-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                  No Events Yet
-                </h3>
-                <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                  You haven't created any events yet. Start building your
-                  community by creating your first event!
-                </p>
-                <Link
-                  href="/organizer/events/create"
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-2xl hover:from-purple-700 hover:to-pink-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  <Plus className="w-5 h-5" />
-                  Create Your First Event
-                </Link>
+            </div>
+          ) : events.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-8 h-8 text-purple-600" />
               </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {events.map(event => {
-                  const formattedDate = event.date
-                    ? new Date(event.date).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : 'TBD';
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
+                No Events Yet
+              </h3>
+              <p className="text-gray-600 mb-4 max-w-md mx-auto">
+                You haven't created any events yet. Start building your
+                community by creating your first event!
+              </p>
+              <Link
+                href="/organizer/events/create"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+              >
+                <Plus className="w-4 h-4" />
+                Create Your First Event
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {events.map(event => {
+                const formattedDate = event.date
+                  ? new Date(event.date).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : 'TBD';
 
-                  const isPast = event.date
-                    ? new Date(event.date) < new Date()
-                    : false;
+                const isPast = event.date
+                  ? new Date(event.date) < new Date()
+                  : false;
 
-                  return (
-                    <div
-                      key={event.id}
-                      className={`border border-gray-100 rounded-2xl p-6 hover:shadow-lg transition-all duration-200 ${
-                        isPast ? 'opacity-75' : ''
-                      }`}
-                    >
-                      {/* Event Header */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 flex items-center justify-center">
-                            <ImageIcon className="w-6 h-6 text-purple-600" />
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-gray-900 text-lg line-clamp-1">
-                              {event.name}
-                            </h3>
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              {getStatusIcon(event.status || 'draft')}
-                              <span className="capitalize">
-                                {event.status || 'draft'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
+                return (
+                  <div
+                    key={event.id}
+                    className={`border border-gray-100 bg-white rounded-xl p-4 hover:shadow-md transition-all duration-200 ${
+                      isPast ? 'opacity-75' : ''
+                    }`}
+                  >
+                    {/* Event Header */}
+                    <div className="flex justify-between mb-3">
+                      {/* <div className="flex items-center gap-4 col-span-2"> */}
+                      {/* <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 flex items-center justify-center">
+                          <ImageIcon className="w-6 h-6 text-purple-600" />
+                        </div> */}
+                      {/* <div className="flex items-center gap-2"> */}
+                      <h2 className="font-semibold text-gray-900 text-xl line-clamp-1">
+                        {event.name}
+                      </h2>
 
-                        <div
-                          className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                            event.status || 'draft'
-                          )}`}
-                        >
-                          {event.status === 'published' ? 'Live' : 'Draft'}
-                        </div>
+                      <div
+                        className={`px-2 py-1 rounded-full text-sm font-light border ${getStatusColor(
+                          event.status || 'draft'
+                        )}`}
+                      >
+                        {event.status === 'published' ? 'Live' : 'Draft'}
                       </div>
+                      {/* </div> */}
+                      {/* </div> */}
+                    </div>
 
-                      {/* Event Details */}
-                      <div className="space-y-3 mb-4">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                    {/* Event Details */}
+                    <div className="space-y-2 mb-3 text-sm text-gray-600">
+                      <div className="flex items-center gap-10">
+                        <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4" />
                           <span>{formattedDate}</span>
                         </div>
-
+                        {event.capacity && (
+                          <div className="flex items-center gap-1">
+                            <Users className="w-4 h-4" />
+                            <span>{event.capacity} slots</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-23">
                         {event.venue && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <div className="flex items-center gap-2">
                             <MapPin className="w-4 h-4" />
                             <span className="line-clamp-1">{event.venue}</span>
                           </div>
                         )}
 
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          {event.capacity && (
-                            <div className="flex items-center gap-1">
-                              <Users className="w-4 h-4" />
-                              <span>
-                                {event.registration_count || 0}/{event.capacity}
-                              </span>
-                            </div>
-                          )}
-
-                          {event.price !== null &&
-                            event.price !== undefined && (
-                              <div className="flex items-center gap-1">
-                                <Ticket className="w-4 h-4" />
-                                <span>₱{event.price}</span>
-                              </div>
-                            )}
-
-                          {event.created_at && (
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              <span>
-                                {new Date(
-                                  event.created_at
-                                ).toLocaleDateString()}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Event Actions */}
-                      <div className="pt-4 border-t border-gray-100">
-                        <Link
-                          href={`/organizer/events/${event.id}`}
-                          className="block w-full text-center py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 transform hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg"
-                        >
-                          Manage Event
-                        </Link>
+                        {event.price !== null && event.price !== undefined && (
+                          <div className="flex items-center gap-1">
+                            <Tag className="w-4 h-4" />
+                            <span>₱{event.price}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+
+                    {/* Event Actions */}
+                    <div className="pt-3 border-t border-gray-100">
+                      <Link
+                        href={`/organizer/events/${event.id}`}
+                        className="block w-full text-center py-2 px-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 text-sm"
+                      >
+                        Manage Event
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {/* </div> */}
         </div>
       </div>
     </>

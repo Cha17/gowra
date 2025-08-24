@@ -2,15 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import {
-  Search,
-  Filter,
-  Calendar,
-  MapPin,
-  Users,
-  Clock,
-  ArrowRight,
-} from 'lucide-react';
+import { Search, Calendar, MapPin, Users, ArrowRight } from 'lucide-react';
 import { apiClient } from '@/src/lib/api';
 import { toast } from 'sonner';
 import Background from '@/src/components/ui/Background';
@@ -37,14 +29,6 @@ interface EventsResponse {
   success: boolean;
   data: {
     events: Event[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-      hasNext: boolean;
-      hasPrev: boolean;
-    };
   };
   message: string;
 }
@@ -53,21 +37,34 @@ export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [organizerFilter, setOrganizerFilter] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [showFilters, setShowFilters] = useState(false);
+  const [eventTypeFilter, setEventTypeFilter] = useState('');
+
+  // Sample event types - you can modify these based on your needs
+  const eventTypes = [
+    'All Events',
+    'Music & Concerts',
+    'Sports & Fitness',
+    'Technology & Innovation',
+    'Arts & Culture',
+    'Business & Networking',
+    'Education & Workshops',
+    'Food & Culinary',
+    'Health & Wellness',
+    'Entertainment & Shows',
+  ];
 
   const fetchEvents = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
-      if (statusFilter) params.append('status', statusFilter);
-      if (organizerFilter) params.append('organizer', organizerFilter);
-      params.append('page', currentPage.toString());
-      params.append('limit', '9');
+      if (eventTypeFilter && eventTypeFilter !== 'All Events') {
+        // For now, we'll use the search parameter for event type filtering
+        // You may need to update your API to support event type filtering
+        params.append('search', `${searchTerm} ${eventTypeFilter}`.trim());
+      }
+      // Remove pagination - fetch all events
+      params.append('limit', '100');
 
       const response = await apiClient.get<EventsResponse>(
         `/api/events?${params.toString()}`
@@ -76,8 +73,7 @@ export default function EventsPage() {
       console.log('Events API Response:', response); // Debug log
 
       if (response.success && response.data) {
-        setEvents(response.data.events);
-        setTotalPages(response.data.pagination.totalPages);
+        setEvents(response.data.events || []);
       } else {
         toast.error('Failed to fetch events');
       }
@@ -91,7 +87,7 @@ export default function EventsPage() {
 
   useEffect(() => {
     fetchEvents();
-  }, [currentPage, searchTerm, statusFilter, organizerFilter]);
+  }, [searchTerm, eventTypeFilter]);
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'Date TBD';
@@ -141,96 +137,52 @@ export default function EventsPage() {
             </p>
           </div>
 
-          {/* Search and Filters */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/50 p-8 mb-8">
-            <div className="flex flex-col lg:flex-row gap-6 items-center justify-between">
+          {/* Minimal Search and Filters */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-6 mb-8">
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
               {/* Search Bar */}
-              <div className="relative flex-1 max-w-lg">
-                <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                  <Search className="h-5 w-5 text-purple-400" />
+              <div className="relative flex-1 max-w-4xl">
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                  <Search className="h-4 w-4 text-purple-400" />
                 </div>
                 <input
                   type="text"
-                  placeholder="Search for amazing events..."
+                  placeholder="Search events..."
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-6 py-4 bg-gray-50/50 border border-gray-200/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent focus:bg-white transition-all duration-200 text-gray-900 placeholder-gray-500"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent focus:bg-white transition-all duration-200 text-gray-900 placeholder-gray-500"
                 />
               </div>
 
-              {/* Filter Toggle */}
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-semibold transition-all duration-200 transform hover:scale-105 ${
-                  showFilters
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <Filter className="h-5 w-5" />
-                <span>Filters</span>
-                {(statusFilter || organizerFilter) && (
-                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
-                )}
-              </button>
-            </div>
-
-            {/* Advanced Filters */}
-            {showFilters && (
-              <div className="mt-8 pt-8 border-t border-gray-200/50">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-800 mb-3">
-                      Event Status
-                    </label>
-                    <select
-                      value={statusFilter}
-                      onChange={e => setStatusFilter(e.target.value)}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:bg-white transition-all duration-200"
-                    >
-                      <option value="">All Events</option>
-                      <option value="published">📅 Published</option>
-                      <option value="draft">✏️ Draft</option>
-                      <option value="cancelled">❌ Cancelled</option>
-                      <option value="completed">✅ Completed</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-gray-800 mb-3">
-                      Organizer
-                    </label>
-                    <div className="relative">
-                      <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Search organizer..."
-                        value={organizerFilter}
-                        onChange={e => setOrganizerFilter(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:bg-white transition-all duration-200"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="lg:col-span-2 flex items-end gap-3">
-                    <button
-                      onClick={() => {
-                        setSearchTerm('');
-                        setStatusFilter('');
-                        setOrganizerFilter('');
-                      }}
-                      className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all duration-200 transform hover:scale-105"
-                    >
-                      Clear All
-                    </button>
-                    <div className="px-4 py-3 bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 font-semibold rounded-xl">
-                      {events.length} event{events.length !== 1 ? 's' : ''}{' '}
-                      found
-                    </div>
-                  </div>
-                </div>
+              {/* Event Type Filter */}
+              <div className="flex-1 max-w-xs">
+                <select
+                  value={eventTypeFilter}
+                  onChange={e => setEventTypeFilter(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:bg-white transition-all duration-200 text-gray-500 placeholder-gray-500"
+                >
+                  {eventTypes.map(type => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
               </div>
-            )}
+
+              {/* Clear Filters */}
+              {(searchTerm ||
+                (eventTypeFilter && eventTypeFilter !== 'All Events')) && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setEventTypeFilter('');
+                  }}
+                  className="px-4 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-all duration-200"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Events Grid */}
@@ -272,8 +224,7 @@ export default function EventsPage() {
                   href="/events"
                   onClick={() => {
                     setSearchTerm('');
-                    setStatusFilter('');
-                    setOrganizerFilter('');
+                    setEventTypeFilter('');
                   }}
                   className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-full hover:from-purple-700 hover:to-pink-700 transition-all duration-200 transform hover:scale-105"
                 >
@@ -418,58 +369,6 @@ export default function EventsPage() {
                   </div>
                 );
               })}
-            </div>
-          )}
-
-          {/* Pagination */}
-          {totalPages > 1 && totalPages > 0 && (
-            <div className="flex justify-center mt-16">
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-2">
-                <nav className="flex items-center space-x-1">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="flex items-center gap-2 px-4 py-2.5 text-gray-700 font-medium rounded-xl hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 disabled:hover:bg-transparent"
-                  >
-                    <ArrowRight className="h-4 w-4 rotate-180" />
-                    Previous
-                  </button>
-
-                  <div className="flex items-center space-x-1 mx-2">
-                    {[...Array(Math.max(1, totalPages || 1))].map(
-                      (_, index) => {
-                        const page = index + 1;
-                        const isCurrentPage = currentPage === page;
-
-                        return (
-                          <button
-                            key={page}
-                            onClick={() => setCurrentPage(page)}
-                            className={`w-10 h-10 rounded-xl font-semibold transition-all duration-200 transform hover:scale-110 ${
-                              isCurrentPage
-                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                                : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        );
-                      }
-                    )}
-                  </div>
-
-                  <button
-                    onClick={() =>
-                      setCurrentPage(Math.min(totalPages, currentPage + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="flex items-center gap-2 px-4 py-2.5 text-gray-700 font-medium rounded-xl hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 disabled:hover:bg-transparent"
-                  >
-                    Next
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </nav>
-              </div>
             </div>
           )}
         </div>

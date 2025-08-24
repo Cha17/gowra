@@ -16,6 +16,7 @@ import {
   X,
   Building2,
   Plus,
+  Ticket,
 } from 'lucide-react';
 import Background from '../ui/Background';
 import {
@@ -160,8 +161,8 @@ export default function Header() {
                         href="/dashboard"
                         className="cursor-pointer text-gray-700 hover:text-blue-600"
                       >
-                        <Calendar className="w-4 h-4 mr-2 text-gray-500" />
-                        My Events & Registrations
+                        <Ticket className="w-4 h-4 mr-2 text-gray-500" />
+                        My Tickets
                       </Link>
                     </DropdownMenuItem>
 

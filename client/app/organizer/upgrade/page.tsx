@@ -67,19 +67,11 @@ export default function OrganizerUpgradePage() {
       <div className="min-h-screen py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="mb-8">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Home
-            </Link>
-
+          <div className="mb-8 mt-8">
             <div className="text-center">
-              <div className="w-20 h-20 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              {/* <div className="w-20 h-20 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Building2 className="w-10 h-10 text-purple-600" />
-              </div>
+              </div> */}
               <h1 className="text-4xl font-bold text-gray-900 mb-4">
                 Become an Organizer
               </h1>
@@ -148,10 +140,11 @@ export default function OrganizerUpgradePage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Professional Tools
+                    Payment Processing
                   </h3>
                   <p className="text-gray-600">
-                    Access advanced features for event promotion and management
+                    Simplify transactions with secure payment options and easy
+                    invoicing for your events.
                   </p>
                 </div>
               </div>
