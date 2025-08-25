@@ -15,6 +15,7 @@ import Link from 'next/link';
 import Background from '@/src/components/ui/Background';
 import { apiClient, API_ENDPOINTS } from '@/src/lib/api';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 interface OrganizerEvent {
   id: string;
@@ -176,6 +177,41 @@ export default function OrganizerEventsPage() {
                       isPast ? 'opacity-75' : ''
                     }`}
                   >
+                    {/* Event Image */}
+                    {event.image_url ? (
+                      <div className="mb-3">
+                        <Image
+                          src={event.image_url}
+                          alt={event.name}
+                          width={100}
+                          height={100}
+                          className="w-full h-32 object-cover rounded-lg"
+                          loading="lazy"
+                          onError={e => {
+                            // Fallback to placeholder if image fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            // Show placeholder instead
+                            const placeholder =
+                              target.nextElementSibling as HTMLElement;
+                            if (placeholder) {
+                              placeholder.style.display = 'flex';
+                            }
+                          }}
+                        />
+                        {/* Hidden placeholder that shows on error */}
+                        <div className="w-full h-32 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg hidden items-center justify-center">
+                          <ImageIcon className="w-12 h-12 text-purple-400" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mb-3">
+                        <div className="w-full h-32 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg flex items-center justify-center">
+                          <ImageIcon className="w-12 h-12 text-purple-400" />
+                        </div>
+                      </div>
+                    )}
+
                     {/* Event Header */}
                     <div className="flex justify-between mb-3">
                       {/* <div className="flex items-center gap-4 col-span-2"> */}
@@ -192,41 +228,48 @@ export default function OrganizerEventsPage() {
                           event.status || 'draft'
                         )}`}
                       >
-                        {event.status === 'published' ? 'Live' : 'Draft'}
+                        {event.status === 'published'
+                          ? 'Live'
+                          : event.status === 'cancelled'
+                          ? 'Cancelled'
+                          : 'Draft'}
                       </div>
                       {/* </div> */}
                       {/* </div> */}
                     </div>
 
                     {/* Event Details */}
-                    <div className="space-y-2 mb-3 text-sm text-gray-600">
-                      <div className="flex items-center gap-10">
+                    <div className="space-y-2 mb-3 text-sm text-gray-600 grid grid-cols-2">
+                      {/* <div className="flex items-center gap-10"> */}
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        <span>{formattedDate}</span>
+                      </div>
+                      {event.venue && (
                         <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
-                          <span>{formattedDate}</span>
+                          <MapPin className="w-4 h-4" />
+                          <span className="line-clamp-1">{event.venue}</span>
                         </div>
-                        {event.capacity && (
-                          <div className="flex items-center gap-1">
-                            <Users className="w-4 h-4" />
-                            <span>{event.capacity} slots</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-23">
-                        {event.venue && (
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4" />
-                            <span className="line-clamp-1">{event.venue}</span>
-                          </div>
-                        )}
+                      )}
 
-                        {event.price !== null && event.price !== undefined && (
-                          <div className="flex items-center gap-1">
-                            <Tag className="w-4 h-4" />
-                            <span>₱{event.price}</span>
-                          </div>
-                        )}
-                      </div>
+                      {/* </div> */}
+                      {/* <div className="flex items-center gap-23"> */}
+
+                      {event.capacity && (
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4" />
+                          <span>{event.capacity} slots</span>
+                        </div>
+                      )}
+                      {event.price !== null && event.price !== undefined && (
+                        <div className="flex items-center gap-2">
+                          <Tag className="w-4 h-4" />
+                          <span>
+                            {event.price == 0.0 ? 'Free' : `₱ ${event.price}`}
+                          </span>
+                        </div>
+                      )}
+                      {/* </div> */}
                     </div>
 
                     {/* Event Actions */}

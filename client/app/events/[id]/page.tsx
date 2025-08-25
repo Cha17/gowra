@@ -78,8 +78,10 @@ export default function EventDetailPage() {
     emergencyContact: '',
     dietaryRestrictions: '',
     specialRequests: '',
+    ticketQuantity: 1,
   });
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [ticketQuantityInput, setTicketQuantityInput] = useState('1');
 
   const eventId = params.id as string;
 
@@ -153,6 +155,7 @@ export default function EventDetailPage() {
       emergencyContact: '',
       dietaryRestrictions: '',
       specialRequests: '',
+      ticketQuantity: 1,
     });
     setShowRegistrationModal(true);
   };
@@ -167,11 +170,28 @@ export default function EventDetailPage() {
       emergencyContact: '',
       dietaryRestrictions: '',
       specialRequests: '',
+      ticketQuantity: 1,
     });
   };
 
   const handleRegistrationFormChange = (field: string, value: string) => {
-    setRegistrationForm(prev => ({ ...prev, [field]: value }));
+    if (field === 'ticketQuantity') {
+      // Handle ticketQuantity as a number
+      const numValue = parseInt(value) || 1;
+      setRegistrationForm(prev => ({ ...prev, [field]: numValue }));
+    } else {
+      setRegistrationForm(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const setTicketQuantity = (qty: number) => {
+    const available = event?.capacity
+      ? Math.max(1, (event.capacity || 0) - (event.registration_count || 0))
+      : 10;
+    const clamped = Math.max(1, Math.min(qty, available));
+    // Update both the form state and input state
+    setRegistrationForm(prev => ({ ...prev, ticketQuantity: clamped }));
+    setTicketQuantityInput(String(clamped));
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -186,17 +206,28 @@ export default function EventDetailPage() {
     try {
       setRegistering(true);
       const response = await apiCallWithRefresh(async token => {
+        console.log(
+          'Sending registration with ticket quantity:',
+          registrationForm.ticketQuantity
+        );
+        console.log('Current form state:', registrationForm);
         return await apiClient.post<RegistrationResponse>(
           '/api/registrations',
           {
             eventId: eventId,
+            ticketQuantity: registrationForm.ticketQuantity,
             additionalInfo: JSON.stringify(registrationForm),
           }
         );
       });
 
       if (response.success) {
-        toast.success('Successfully registered for the event!');
+        console.log('Registration successful, response:', response);
+        toast.success(
+          `Successfully registered for ${
+            registrationForm.ticketQuantity
+          } ticket${registrationForm.ticketQuantity > 1 ? 's' : ''}!`
+        );
         setIsRegistered(true);
         setShowRegistrationModal(false);
         setShowConfirmation(false);
@@ -415,7 +446,7 @@ export default function EventDetailPage() {
                         <span className="text-green-600 font-bold">
                           {event.registration_count}
                         </span>
-                        /{event.capacity} registered
+                        /{event.capacity} tickets
                       </p>
                       <p className="text-sm text-gray-600 mt-1">
                         {availableSpots > 0 ? (
@@ -551,10 +582,10 @@ export default function EventDetailPage() {
                 {/* Registration Status */}
                 {isRegistered ? (
                   <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl mb-8">
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <div className="flex items-center gap-4">
+                      {/* <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                         <CheckCircle className="h-6 w-6 text-green-600" />
-                      </div>
+                      </div> */}
                       <div>
                         <p className="font-bold text-green-800 text-lg">
                           Successfully Registered! 🎉
@@ -680,7 +711,7 @@ export default function EventDetailPage() {
               {/* Modal Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  Register for Event
+                  Register for Event Tickets
                 </h2>
                 <button
                   onClick={handleCloseRegistrationModal}
@@ -754,6 +785,100 @@ export default function EventDetailPage() {
                         </div>
                       </div>
 
+                      {/* Ticket Quantity */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Number of Tickets *
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTicketQuantity(
+                                (registrationForm.ticketQuantity || 1) - 1
+                              );
+                            }}
+                            className="w-10 h-10 rounded-lg border text-gray-800 border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={
+                              (registrationForm.ticketQuantity || 1) <= 1
+                            }
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min={1}
+                            max={
+                              event?.capacity
+                                ? (event.capacity || 0) -
+                                  (event?.registration_count || 0)
+                                : 10
+                            }
+                            value={ticketQuantityInput}
+                            onChange={e => {
+                              const val = e.target.value;
+                              // allow empty while typing
+                              if (val === '') {
+                                setTicketQuantityInput('');
+                                return;
+                              }
+                              // accept only digits
+                              if (/^\d+$/.test(val)) {
+                                setTicketQuantityInput(val);
+                              }
+                            }}
+                            onBlur={() => {
+                              const next = Number(ticketQuantityInput);
+                              setTicketQuantity(Number.isNaN(next) ? 1 : next);
+                            }}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                const next = Number(ticketQuantityInput);
+                                setTicketQuantity(
+                                  Number.isNaN(next) ? 1 : next
+                                );
+                              }
+                            }}
+                            className="w-20 text-center text-lg font-semibold text-gray-900 border border-gray-300 rounded-lg py-2"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTicketQuantity(
+                                (registrationForm.ticketQuantity || 1) + 1
+                              );
+                            }}
+                            className="w-10 h-10 rounded-lg border text-gray-800 border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={
+                              (registrationForm.ticketQuantity || 1) >= 10 ||
+                              (event?.capacity
+                                ? (registrationForm.ticketQuantity || 1) >=
+                                  (event.capacity || 0) -
+                                    (event.registration_count || 0)
+                                : false)
+                            }
+                          >
+                            +
+                          </button>
+                        </div>
+                        <div className="mt-2 text-sm text-gray-600">
+                          {event?.price && event.price !== '0' ? (
+                            <span>
+                              Total: ₱
+                              {(
+                                parseFloat(event.price) *
+                                (registrationForm.ticketQuantity || 1)
+                              ).toFixed(2)}
+                            </span>
+                          ) : (
+                            <span>Free event</span>
+                          )}
+                          <div className="mt-1 text-xs text-gray-500">
+                            Maximum 10 tickets per registration
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Submit Button */}
                       <div className="flex gap-3">
                         <button
@@ -769,10 +894,10 @@ export default function EventDetailPage() {
                             !registrationForm.name.trim() ||
                             !registrationForm.email.trim()
                           }
-                          className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                          className="flex-1 flex items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                         >
                           <ArrowRight className="h-5 w-5" />
-                          <span>Review Registration</span>
+                          <span>Review</span>
                         </button>
                       </div>
                     </form>
@@ -782,7 +907,7 @@ export default function EventDetailPage() {
                     {/* Confirmation Step */}
                     <div className="mb-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        Confirm Your Registration
+                        Confirm Your Ticket Registration
                       </h3>
                       <p className="text-gray-600 text-sm">
                         Please review your information below
@@ -854,6 +979,50 @@ export default function EventDetailPage() {
                           )}
                         </div>
                       </div>
+
+                      {/* Payment Summary */}
+                      <div className="bg-white rounded-xl p-4 border">
+                        <h4 className="font-semibold text-gray-900 mb-3">
+                          Payment Summary
+                        </h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Tickets</span>
+                            <span className="font-medium text-gray-900">
+                              {registrationForm.ticketQuantity} ×{' '}
+                              {event?.price && event.price !== '0'
+                                ? `₱${event.price}`
+                                : 'Free'}
+                            </span>
+                          </div>
+                          {/* <div className="text-xs text-gray-500 text-center">
+                            Maximum 10 tickets per registration
+                          </div> */}
+                          {event?.price && event.price !== '0' ? (
+                            <div className="flex justify-between border-t border-gray-200 pt-2">
+                              <span className="text-gray-600 font-semibold">
+                                Total
+                              </span>
+                              <span className="font-bold text-purple-600">
+                                ₱
+                                {(
+                                  parseFloat(event.price) *
+                                  registrationForm.ticketQuantity
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex justify-between border-t border-gray-200 pt-2">
+                              <span className="text-gray-600 font-semibold">
+                                Total
+                              </span>
+                              <span className="font-bold text-gray-900">
+                                Free
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     {/* Confirmation Buttons */}
@@ -868,7 +1037,7 @@ export default function EventDetailPage() {
                       <button
                         onClick={handleRegister}
                         disabled={registering}
-                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                        className="flex-1 flex items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                       >
                         {registering ? (
                           <>
@@ -878,7 +1047,7 @@ export default function EventDetailPage() {
                         ) : (
                           <>
                             <CheckCircle className="h-5 w-5" />
-                            <span>Confirm Registration</span>
+                            <span>Confirm</span>
                           </>
                         )}
                       </button>

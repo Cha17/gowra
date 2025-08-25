@@ -21,6 +21,9 @@ eventRoutes.get('/', async (c) => {
     // Filter by status if provided
     if (status && ['draft', 'published', 'cancelled', 'completed'].includes(status)) {
       query = query.where('status', '=', status as any);
+    } else {
+      // Default: only show published events publicly
+      query = query.where('status', '=', 'published' as any);
     }
     
     // Filter by organizer if provided
@@ -306,10 +309,12 @@ eventRoutes.put('/:id', requireAuth, requireEventOwnership, async (c) => {
       details, 
       date, 
       imageUrl, 
+      image_url, 
       venue, 
       price, 
       capacity, 
       registrationDeadline,
+      registration_deadline,
       status 
     } = body;
 
@@ -325,19 +330,33 @@ eventRoutes.put('/:id', requireAuth, requireEventOwnership, async (c) => {
       connection_string: c.env.DATABASE_URL,
     });
     
+    // Load existing event to preserve fields not being updated
+    const existing = await db
+      .selectFrom('events')
+      .selectAll()
+      .where('id', '=', eventId)
+      .executeTakeFirst();
+
+    if (!existing) {
+      return c.json({ success: false, error: 'Event not found' }, 404);
+    }
+
     // Update event
     const updatedEvent = await db
       .updateTable('events')
       .set({
-        name,
-        details: details || null,
-        date: new Date(date),
-        image_url: imageUrl || null,
-        venue,
-        status: status || 'draft',
-        price: price || 0,
-        capacity: capacity || null,
-        registration_deadline: registrationDeadline ? new Date(registrationDeadline) : null,
+        // Only update fields that are explicitly provided, preserve all others
+        ...(name !== undefined && { name }),
+        ...(details !== undefined && { details: details || null }),
+        ...(date !== undefined && { date: new Date(date) }),
+        ...(imageUrl !== undefined && { image_url: imageUrl || null }),
+        ...(image_url !== undefined && { image_url: image_url || null }),
+        ...(venue !== undefined && { venue }),
+        ...(status !== undefined && { status }),
+        ...(price !== undefined && { price: price || 0 }),
+        ...(capacity !== undefined && { capacity: capacity || null }),
+        ...(registrationDeadline !== undefined && { registration_deadline: registrationDeadline ? new Date(registrationDeadline) : null }),
+        ...(registration_deadline !== undefined && { registration_deadline: registration_deadline ? new Date(registration_deadline) : null }),
         updated_at: new Date()
       })
       .where('id', '=', eventId)

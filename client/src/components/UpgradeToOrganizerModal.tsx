@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { OrganizerUpgradeData } from '../hooks/useAuth';
+import { EVENT_TYPES } from '../lib/constants';
 
 interface UpgradeToOrganizerModalProps {
   isOpen: boolean;
@@ -30,23 +31,6 @@ const ORGANIZATION_TYPES = [
   'Sports Club',
   'Cultural Group',
   'Professional Association',
-  'Other',
-];
-
-const EVENT_TYPES = [
-  'Workshop',
-  'Conference',
-  'Meetup',
-  'Seminar',
-  'Training',
-  'Webinar',
-  'Hackathon',
-  'Competition',
-  'Exhibition',
-  'Concert',
-  'Sports Event',
-  'Charity Event',
-  'Networking Event',
   'Other',
 ];
 

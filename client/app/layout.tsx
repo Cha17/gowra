@@ -38,7 +38,7 @@ export default function RootLayout({
           <Header />
           <main>{children}</main>
           <Toaster position="top-right" />
-          <DebugAuthState />
+          {/* <DebugAuthState /> */}
         </NeonAuthProvider>
       </body>
     </html>

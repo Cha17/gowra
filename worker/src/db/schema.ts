@@ -70,6 +70,7 @@ export const registrations = pgTable('registrations', {
   payment_status: paymentStatusEnum('payment_status').default('pending').notNull(),
   payment_reference: varchar('payment_reference', { length: 255 }),
   payment_amount: decimal('payment_amount', { precision: 10, scale: 2 }).notNull(),
+  ticket_quantity: integer('ticket_quantity').default(1).notNull(),
   registration_date: timestamp('registration_date').defaultNow().notNull(),
   created_at: timestamp('created_at').defaultNow().notNull(),
 });

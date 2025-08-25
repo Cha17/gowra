@@ -180,11 +180,11 @@ export default function EventDetailPage({
         message?: string;
       }>(API_ENDPOINTS.event(eventId), {
         ...event,
-        status: 'archived',
+        status: 'cancelled',
       });
 
       if ((res as any).success) {
-        toast.success('Event archived successfully');
+        toast.success('Event archived (cancelled) successfully');
         router.push('/organizer/events');
       } else {
         toast.error('Failed to archive event');
@@ -324,7 +324,11 @@ export default function EventDetailPage({
                   event.status || 'draft'
                 )}`}
               >
-                {event.status === 'published' ? 'Live' : 'Draft'}
+                {event.status === 'published'
+                  ? 'Live'
+                  : event.status === 'cancelled'
+                  ? 'Cancelled'
+                  : 'Draft'}
               </div>
             </div>
 
@@ -346,6 +350,60 @@ export default function EventDetailPage({
                       className="w-full h-auto object-cover"
                       priority
                     />
+                  </div>
+                  {/* Quick Actions */}
+                  <div className="bg-white rounded-2xl shadow-lg p-6 mt-8">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                      Quick Actions
+                    </h2>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Link
+                        href={`/events/${event.id}`}
+                        target="_blank"
+                        className="flex items-center justify-center gap-2 px-4 py-3 text-blue-700 hover:text-white hover:bg-blue-600 border border-blue-200 rounded-xl text-sm transition-colors"
+                      >
+                        <Eye className="w-4 h-4" />
+                        View
+                      </Link>
+
+                      <Link
+                        href={`/organizer/events/${event.id}/edit`}
+                        className="flex items-center justify-center gap-2 px-4 py-3 text-purple-700 hover:text-white hover:bg-purple-600 border border-purple-200 rounded-xl text-sm transition-colors"
+                      >
+                        <Pencil className="w-4 h-4" />
+                        Edit
+                      </Link>
+
+                      <button
+                        onClick={() =>
+                          confirmStatusChange(
+                            event.status === 'published' ? 'draft' : 'published'
+                          )
+                        }
+                        disabled={updatingStatus}
+                        className={`flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
+                          event.status === 'published'
+                            ? 'text-yellow-700 hover:text-white hover:bg-yellow-600 border border-yellow-200'
+                            : 'text-green-700 hover:text-white hover:bg-green-600 border border-green-200'
+                        } disabled:opacity-50`}
+                      >
+                        {updatingStatus
+                          ? 'Updating...'
+                          : event.status === 'published'
+                          ? 'Move to Draft'
+                          : 'Publish Event'}
+                      </button>
+
+                      <button
+                        onClick={confirmDelete}
+                        disabled={deleting}
+                        className="flex items-center justify-center gap-2 px-4 py-3 text-red-700 hover:text-white hover:bg-red-600 border border-red-200 rounded-xl text-sm transition-colors disabled:opacity-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Archive
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -370,7 +428,7 @@ export default function EventDetailPage({
                   Event Information
                 </h2>
 
-                <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-6">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
                       <Calendar className="w-5 h-5 text-purple-600" />
@@ -519,7 +577,7 @@ export default function EventDetailPage({
                           </div>
                           <div>
                             <p className="text-sm text-purple-600 font-medium">
-                              Available Spots
+                              Available Slots
                             </p>
                             <p className="text-2xl font-bold text-purple-900">
                               {event.capacity
@@ -622,61 +680,6 @@ export default function EventDetailPage({
                   </div>
                 )}
               </div>
-
-              {/* Quick Actions */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                  Quick Actions
-                </h2>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Link
-                    href={`/events/${event.id}`}
-                    target="_blank"
-                    className="flex items-center justify-center gap-2 px-4 py-3 text-blue-700 hover:text-white hover:bg-blue-600 border border-blue-200 rounded-xl text-sm transition-colors"
-                  >
-                    <Eye className="w-4 h-4" />
-                    View Public Page
-                  </Link>
-
-                  <Link
-                    href={`/organizer/events/${event.id}/edit`}
-                    className="flex items-center justify-center gap-2 px-4 py-3 text-purple-700 hover:text-white hover:bg-purple-600 border border-purple-200 rounded-xl text-sm transition-colors"
-                  >
-                    <Pencil className="w-4 h-4" />
-                    Edit Event
-                  </Link>
-
-                  <button
-                    onClick={() =>
-                      confirmStatusChange(
-                        event.status === 'published' ? 'draft' : 'published'
-                      )
-                    }
-                    disabled={updatingStatus}
-                    className={`flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                      event.status === 'published'
-                        ? 'text-yellow-700 hover:text-white hover:bg-yellow-600 border border-yellow-200'
-                        : 'text-green-700 hover:text-white hover:bg-green-600 border border-green-200'
-                    } disabled:opacity-50`}
-                  >
-                    {updatingStatus
-                      ? 'Updating...'
-                      : event.status === 'published'
-                      ? 'Move to Draft'
-                      : 'Publish Event'}
-                  </button>
-
-                  <button
-                    onClick={confirmDelete}
-                    disabled={deleting}
-                    className="flex items-center justify-center gap-2 px-4 py-3 text-red-700 hover:text-white hover:bg-red-600 border border-red-200 rounded-xl text-sm transition-colors disabled:opacity-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Archive Event
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -740,7 +743,7 @@ export default function EventDetailPage({
                 value={deleteReason}
                 onChange={e => setDeleteReason(e.target.value)}
                 placeholder="Type 'Archive' to confirm"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 text-gray-900 placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                 required
               />
             </div>

@@ -7,6 +7,7 @@ import { apiClient } from '@/src/lib/api';
 import { toast } from 'sonner';
 import Background from '@/src/components/ui/Background';
 import Image from 'next/image';
+import { EVENT_TYPES_WITH_ALL } from '@/src/lib/constants';
 
 interface Event {
   id: string;
@@ -38,20 +39,6 @@ export default function EventsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [eventTypeFilter, setEventTypeFilter] = useState('');
-
-  // Sample event types - you can modify these based on your needs
-  const eventTypes = [
-    'All Events',
-    'Music & Concerts',
-    'Sports & Fitness',
-    'Technology & Innovation',
-    'Arts & Culture',
-    'Business & Networking',
-    'Education & Workshops',
-    'Food & Culinary',
-    'Health & Wellness',
-    'Entertainment & Shows',
-  ];
 
   const fetchEvents = async () => {
     try {
@@ -161,7 +148,7 @@ export default function EventsPage() {
                   onChange={e => setEventTypeFilter(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:bg-white transition-all duration-200 text-gray-500 placeholder-gray-500"
                 >
-                  {eventTypes.map(type => (
+                  {EVENT_TYPES_WITH_ALL.map(type => (
                     <option key={type} value={type}>
                       {type}
                     </option>

@@ -128,6 +128,7 @@ registrationRoutes.get('/my-registrations', authMiddleware, async (c) => {
         'registrations.payment_status',
         'registrations.payment_reference',
         'registrations.payment_amount',
+        'registrations.ticket_quantity',
         'registrations.registration_date',
         'registrations.created_at',
         'events.name as event_name',
@@ -135,6 +136,8 @@ registrationRoutes.get('/my-registrations', authMiddleware, async (c) => {
         'events.venue as event_venue',
         'events.organizer as event_organizer',
         'events.image_url as event_image',
+        'events.status as event_status',
+        'events.registration_deadline',
         db.fn.countAll().over().as('total_count')
       ])
       .where('registrations.user_id', '=', user.id)
@@ -173,6 +176,98 @@ registrationRoutes.get('/my-registrations', authMiddleware, async (c) => {
   }
 });
 
+// Delete registration (cancel ticket) - protected
+registrationRoutes.delete('/:id', authMiddleware, async (c) => {
+  try {
+    const registrationId = c.req.param('id');
+    const user = c.get('user');
+    
+    if (!registrationId) {
+      return c.json({
+        success: false,
+        error: 'Registration ID is required',
+        message: 'Please provide a valid registration ID'
+      }, 400);
+    }
+    
+    const db = createDbClient({
+      connection_string: c.env.DATABASE_URL,
+    });
+    
+    // First, get the registration to check ownership and event date
+    const registration = await db
+      .selectFrom('registrations')
+      .innerJoin('events', 'registrations.event_id', 'events.id')
+      .select([
+        'registrations.id',
+        'registrations.user_id',
+        'registrations.payment_status',
+        'events.date as event_date',
+        'events.capacity',
+        'events.id as event_id'
+      ])
+      .where('registrations.id', '=', registrationId)
+      .executeTakeFirst();
+    
+    if (!registration) {
+      return c.json({
+        success: false,
+        error: 'Registration not found',
+        message: 'The registration you are trying to cancel does not exist'
+      }, 404);
+    }
+    
+    // Check if user owns this registration
+    if (registration.user_id !== user.id) {
+      return c.json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'You can only cancel your own tickets'
+      }, 403);
+    }
+    
+    // Check if event has already passed
+    const eventDate = new Date(registration.event_date);
+    const now = new Date();
+    if (eventDate <= now) {
+      return c.json({
+        success: false,
+        error: 'Event already passed',
+        message: 'Cannot cancel tickets for events that have already passed'
+      }, 400);
+    }
+    
+    // Check if ticket is already paid (might want to prevent cancellation)
+    if (registration.payment_status === 'paid') {
+      return c.json({
+        success: false,
+        error: 'Ticket already paid',
+        message: 'Cannot cancel tickets that are already paid'
+      }, 400);
+    }
+    
+    // Delete the registration
+    await db
+      .deleteFrom('registrations')
+      .where('id', '=', registrationId)
+      .execute();
+    
+    return c.json({
+      success: true,
+      message: 'Ticket cancelled successfully'
+    });
+    
+  } catch (error) {
+    console.error('Delete registration error:', error);
+    
+    return c.json({
+      success: false,
+      error: 'Failed to cancel ticket',
+      message: 'An error occurred while cancelling your ticket'
+    }, 500);
+  }
+});
+
 // Get registration by ID (protected)
 registrationRoutes.get('/:id', authMiddleware, async (c) => {
   try {
@@ -202,6 +297,7 @@ registrationRoutes.get('/:id', authMiddleware, async (c) => {
         'registrations.payment_status',
         'registrations.payment_reference',
         'registrations.payment_amount',
+        'registrations.ticket_quantity',
         'registrations.registration_date',
         'registrations.created_at',
         'events.name as event_name',
@@ -209,6 +305,8 @@ registrationRoutes.get('/:id', authMiddleware, async (c) => {
         'events.venue as event_venue',
         'events.organizer as event_organizer',
         'events.image_url as event_image',
+        'events.status as event_status',
+        'events.registration_deadline',
         'users.email as user_email',
         'users.name as user_name'
       ])
@@ -251,7 +349,7 @@ registrationRoutes.post('/', authMiddleware, async (c) => {
   try {
     const user = c.get('user');
     const body = await c.req.json();
-    const { eventId } = body;
+    const { eventId, ticketQuantity = 1 } = body;
     
     // Validation
     if (!eventId) {
@@ -259,6 +357,15 @@ registrationRoutes.post('/', authMiddleware, async (c) => {
         success: false,
         error: 'Event ID is required',
         message: 'Please provide a valid event ID'
+      }, 400);
+    }
+    
+    // Validate ticket quantity
+    if (ticketQuantity < 1 || ticketQuantity > 10) {
+      return c.json({
+        success: false,
+        error: 'Invalid ticket quantity',
+        message: 'Ticket quantity must be between 1 and 10'
       }, 400);
     }
     
@@ -332,16 +439,18 @@ registrationRoutes.post('/', authMiddleware, async (c) => {
     
     const currentRegistrations = Number(registrationCount?.count || 0);
     
-    if (event.capacity && currentRegistrations >= event.capacity) {
+    // Check if adding the requested tickets would exceed capacity
+    if (event.capacity && (currentRegistrations + ticketQuantity) > event.capacity) {
       return c.json({
         success: false,
         error: 'Event full',
-        message: 'This event has reached its maximum capacity'
+        message: `Cannot register for ${ticketQuantity} tickets. Only ${event.capacity - currentRegistrations} spots remaining.`
       }, 409);
     }
     
     // Create registration
     const paymentReference = `REG_${Date.now()}_${user.id.slice(-6)}`;
+    const totalAmount = (parseFloat(event.price.toString()) * ticketQuantity).toFixed(2);
     
     const result = await db
       .insertInto('registrations')
@@ -350,7 +459,8 @@ registrationRoutes.post('/', authMiddleware, async (c) => {
         event_id: eventId,
         payment_status: 'pending',
         payment_reference: paymentReference,
-        payment_amount: event.price,
+        payment_amount: totalAmount as any,
+        ticket_quantity: ticketQuantity,
         registration_date: new Date()
       })
       .returningAll()
@@ -458,99 +568,6 @@ registrationRoutes.put('/:id/status', authMiddleware, adminMiddleware, async (c)
       success: false,
       error: 'Failed to update registration status',
       message: 'An error occurred while updating the registration status'
-    }, 500);
-  }
-});
-
-// Cancel registration (protected)
-registrationRoutes.delete('/:id', authMiddleware, async (c) => {
-  try {
-    const registrationId = c.req.param('id');
-    const user = c.get('user');
-    
-    if (!registrationId) {
-      return c.json({
-        success: false,
-        error: 'Registration ID is required',
-        message: 'Please provide a valid registration ID'
-      }, 400);
-    }
-    
-    const db = createDbClient({
-      connection_string: c.env.DATABASE_URL,
-    });
-    
-    // Check if registration exists and user has permission
-    let query = db
-      .selectFrom('registrations')
-      .innerJoin('events', 'registrations.event_id', 'events.id')
-      .select([
-        'registrations.id',
-        'registrations.user_id',
-        'registrations.payment_status',
-        'events.date as event_date',
-        'events.name as event_name'
-      ])
-      .where('registrations.id', '=', registrationId);
-    
-    // Non-admin users can only cancel their own registrations
-    if (!user.isAdmin) {
-      query = query.where('registrations.user_id', '=', user.id);
-    }
-    
-    const registration = await query.executeTakeFirst();
-    
-    if (!registration) {
-      return c.json({
-        success: false,
-        error: 'Registration not found',
-        message: 'The specified registration does not exist or you do not have permission to cancel it'
-      }, 404);
-    }
-    
-    // Check if event has already passed
-    if (new Date(registration.event_date) <= new Date()) {
-      return c.json({
-        success: false,
-        error: 'Cannot cancel',
-        message: 'Cannot cancel registration for past events'
-      }, 400);
-    }
-    
-    // Check if payment has been made (admin can still cancel)
-    if (registration.payment_status === 'paid' && !user.isAdmin) {
-      return c.json({
-        success: false,
-        error: 'Cannot cancel paid registration',
-        message: 'Please contact admin to cancel paid registrations'
-      }, 400);
-    }
-    
-    // Delete the registration
-    await db
-      .deleteFrom('registrations')
-      .where('id', '=', registrationId)
-      .execute();
-    
-    console.log('Registration cancelled:', {
-      registrationId,
-      eventName: registration.event_name,
-      userId: user.id,
-      cancelledBy: user.isAdmin ? 'admin' : 'user'
-    });
-    
-    return c.json({
-      success: true,
-      message: 'Registration cancelled successfully'
-    });
-    
-  } catch (error) {
-    console.error('Cancel registration error:', error);
-    
-    return c.json({
-      success: false,
-      error: 'Failed to cancel registration',
-      message: 'An error occurred while cancelling the registration'
     }, 500);
   }
 });
