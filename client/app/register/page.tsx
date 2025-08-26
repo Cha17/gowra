@@ -406,12 +406,12 @@ export default function RegisterPage() {
         </div>
 
         {/* Floating Elements */}
-        <div className="absolute top-20 left-10 animate-bounce">
+        {/* <div className="absolute top-20 left-10 animate-bounce">
           <div className="w-8 h-8 bg-purple-200 rounded-full opacity-60"></div>
         </div>
         <div className="absolute bottom-20 right-10 animate-pulse">
           <div className="w-6 h-6 bg-pink-200 rounded-full opacity-60"></div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

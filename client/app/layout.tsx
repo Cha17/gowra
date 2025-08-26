@@ -18,9 +18,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Gowra - Event Management System',
+  title: 'Gowra',
   description:
     'A modern event management system built with Next.js and Stack Auth',
+  icons: {
+    icon: [{ url: '/assets/G.png' }],
+  },
 };
 
 export default function RootLayout({

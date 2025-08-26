@@ -70,7 +70,7 @@ export default function Home() {
     if (!price) return 'Free';
     const numPrice = parseFloat(price);
     if (isNaN(numPrice)) return 'Free';
-    return numPrice === 0 ? 'Free' : `$${numPrice.toFixed(2)}`;
+    return numPrice === 0 ? 'Free' : `₱ ${numPrice.toFixed(2)}`;
   };
   return (
     <div className="min-h-screen overflow-x-hidden">
@@ -83,7 +83,7 @@ export default function Home() {
               Gowra
             </h1>
             <p className="text-2xl md:text-3xl text-gray-700 mb-4 font-medium">
-              Modern Event Management System
+              Event Management System
             </p>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
               Transform your events with our comprehensive platform. From
@@ -101,17 +101,10 @@ export default function Home() {
               Explore Events
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </a>
-            <a
-              href="/register"
-              className="px-8 py-4 border-2 border-purple-600 text-purple-600 font-semibold rounded-full hover:bg-purple-600 hover:text-white transition-all duration-300 flex items-center gap-2"
-            >
-              Get Started Free
-              <Star className="w-5 h-5" />
-            </a>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
+          {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
             <div className="text-center">
               <div className="text-3xl font-bold text-purple-600 mb-2">
                 500+
@@ -126,16 +119,16 @@ export default function Home() {
               <div className="text-3xl font-bold text-indigo-600 mb-2">99%</div>
               <div className="text-gray-600">Success Rate</div>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Floating Elements */}
-        <div className="absolute top-20 left-10 animate-bounce">
+        {/* <div className="absolute top-20 left-10 animate-bounce">
           <div className="w-16 h-16 bg-purple-200 rounded-full opacity-60"></div>
         </div>
         <div className="absolute bottom-20 right-10 animate-pulse">
           <div className="w-12 h-12 bg-pink-200 rounded-full opacity-60"></div>
-        </div>
+        </div> */}
       </section>
 
       {/* Features Section */}
@@ -360,7 +353,7 @@ export default function Home() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      {/* <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -371,9 +364,9 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Step 1 */}
-            <div className="text-center">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8"> */}
+      {/* Step 1 */}
+      {/* <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">
                 1
               </div>
@@ -383,10 +376,10 @@ export default function Home() {
               <p className="text-gray-600">
                 Set up your event details, pricing, and registration options
               </p>
-            </div>
+            </div> */}
 
-            {/* Step 2 */}
-            <div className="text-center">
+      {/* Step 2 */}
+      {/* <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-r from-pink-600 to-indigo-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">
                 2
               </div>
@@ -396,10 +389,10 @@ export default function Home() {
               <p className="text-gray-600">
                 Share your event link and start collecting registrations
               </p>
-            </div>
+            </div> */}
 
-            {/* Step 3 */}
-            <div className="text-center">
+      {/* Step 3 */}
+      {/* <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">
                 3
               </div>
@@ -412,7 +405,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-purple-600 to-pink-600">
@@ -421,11 +414,11 @@ export default function Home() {
             Ready to Get Started?
           </h2>
           <p className="text-xl text-purple-100 mb-8">
-            Join thousands of event organizers who trust Gowra
+            Join and create events with Gowra
           </p>
           <div className="flex gap-4 items-center justify-center flex-col sm:flex-row">
             <a
-              href="/register"
+              href="/organizer"
               className="px-8 py-4 bg-white text-purple-600 font-semibold rounded-full hover:bg-gray-100 transition-colors flex items-center gap-2"
             >
               Start Creating Events
@@ -448,16 +441,16 @@ export default function Home() {
             {/* Brand */}
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-white" />
-                </div>
+                {/* <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"> */}
+                <Image src="/assets/G.png" alt="Gowra" width={32} height={32} />
+                {/* </div> */}
                 <span className="text-xl font-bold text-gray-900">Gowra</span>
               </div>
               <p className="text-gray-600 mb-4 max-w-md">
-                The modern event management platform that makes creating and
-                attending events effortless.
+                An event management platform that makes creating and attending
+                events effortless.
               </p>
-              <div className="flex space-x-4">
+              {/* <div className="flex space-x-4">
                 <a
                   href="#"
                   className="text-gray-400 hover:text-purple-600 transition-colors"
@@ -505,7 +498,7 @@ export default function Home() {
                     />
                   </svg>
                 </a>
-              </div>
+              </div> */}
             </div>
 
             {/* Quick Links */}
@@ -522,30 +515,30 @@ export default function Home() {
                     Events
                   </a>
                 </li>
-                <li>
+                {/* <li>
                   <a
                     href="/pricing"
                     className="text-gray-600 hover:text-purple-600 transition-colors"
                   >
                     Pricing
                   </a>
-                </li>
-                <li>
+                </li> */}
+                {/* <li>
                   <a
                     href="/features"
                     className="text-gray-600 hover:text-purple-600 transition-colors"
                   >
                     Features
                   </a>
-                </li>
-                <li>
+                </li> */}
+                {/* <li>
                   <a
                     href="/api"
                     className="text-gray-600 hover:text-purple-600 transition-colors"
                   >
                     API
                   </a>
-                </li>
+                </li> */}
               </ul>
             </div>
 
@@ -563,30 +556,30 @@ export default function Home() {
                     About
                   </a>
                 </li>
-                <li>
+                {/* <li>
                   <a
                     href="/contact"
                     className="text-gray-600 hover:text-purple-600 transition-colors"
                   >
                     Contact
                   </a>
-                </li>
-                <li>
+                </li> */}
+                {/* <li>
                   <a
                     href="/careers"
                     className="text-gray-600 hover:text-purple-600 transition-colors"
                   >
                     Careers
                   </a>
-                </li>
-                <li>
+                </li> */}
+                {/* <li>
                   <a
                     href="/blog"
                     className="text-gray-600 hover:text-purple-600 transition-colors"
                   >
                     Blog
                   </a>
-                </li>
+                </li> */}
               </ul>
             </div>
           </div>
@@ -594,9 +587,9 @@ export default function Home() {
           <div className="mt-12 pt-8 border-t border-gray-200">
             <div className="flex flex-col md:flex-row justify-between items-center">
               <p className="text-gray-600 text-sm">
-                © 2024 Gowra. All rights reserved.
+                © 2025 Gowra. All rights reserved.
               </p>
-              <div className="flex space-x-6 mt-4 md:mt-0">
+              {/* <div className="flex space-x-6 mt-4 md:mt-0">
                 <a
                   href="/privacy"
                   className="text-gray-600 hover:text-purple-600 text-sm transition-colors"
@@ -615,7 +608,7 @@ export default function Home() {
                 >
                   Cookies
                 </a>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

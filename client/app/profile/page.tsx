@@ -5,6 +5,7 @@ import { User, Mail, Calendar, Edit3, Save, X, Shield } from 'lucide-react';
 import { useAuthContext } from '@/src/components/providers/NeonAuthProvider';
 import { toast } from 'sonner';
 import ProtectedRoute from '@/src/components/auth/ProtectedRoute';
+import Background from '@/src/components/ui/Background';
 
 export default function ProfilePage() {
   const { user, updateProfile } = useAuthContext();
@@ -70,7 +71,8 @@ export default function ProfilePage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 py-8">
+      <Background />
+      <div className="min-h-screen py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="text-center mb-8">
@@ -151,7 +153,7 @@ export default function ProfilePage() {
                             setFormData({ ...formData, name: e.target.value })
                           }
                           disabled={!isEditing}
-                          className={`w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl transition-all duration-200 ${
+                          className={`w-full pl-10 pr-4 py-3 text-gray-700 border border-gray-200 rounded-xl transition-all duration-200 ${
                             isEditing
                               ? 'bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent'
                               : 'bg-gray-50 cursor-not-allowed'
@@ -176,7 +178,7 @@ export default function ProfilePage() {
                           type="email"
                           value={formData.email}
                           disabled={true}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl bg-gray-50 cursor-not-allowed"
+                          className="w-full pl-10 pr-4 py-3 text-gray-700 border border-gray-200 rounded-xl bg-gray-50 cursor-not-allowed"
                           placeholder="Email address"
                         />
                       </div>
@@ -191,7 +193,7 @@ export default function ProfilePage() {
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Account Type
                       </label>
-                      <div className="flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-xl bg-gray-50">
+                      <div className="flex items-center gap-2 px-4 py-3 text-gray-700 border border-gray-200 rounded-xl bg-gray-50">
                         <Shield className="h-5 w-5 text-gray-400" />
                         <span className="text-gray-700">
                           {user?.isAdmin ? 'Administrator' : 'Regular User'}
@@ -204,7 +206,7 @@ export default function ProfilePage() {
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Member Since
                       </label>
-                      <div className="flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-xl bg-gray-50">
+                      <div className="flex items-center gap-2 px-4 py-3 text-gray-700 border border-gray-200 rounded-xl bg-gray-50">
                         <Calendar className="h-5 w-5 text-gray-400" />
                         <span className="text-gray-700">
                           {user?.created_at
@@ -262,8 +264,8 @@ export default function ProfilePage() {
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Last Updated</span>
-                    <span className="text-gray-900 font-semibold">
+                    <span className="text-gray-600 text-sm">Last Updated</span>
+                    <span className="text-gray-900 font-semibold text-sm">
                       {user?.updated_at ? formatDate(user.updated_at) : 'Never'}
                     </span>
                   </div>
@@ -282,10 +284,10 @@ export default function ProfilePage() {
                       Account secured with password
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-green-600">
+                  {/* <div className="flex items-center gap-3 text-green-600">
                     <div className="w-2 h-2 bg-green-600 rounded-full"></div>
                     <span className="text-sm">Email verified</span>
-                  </div>
+                  </div> */}
                   <div className="flex items-center gap-3 text-green-600">
                     <div className="w-2 h-2 bg-green-600 rounded-full"></div>
                     <span className="text-sm">
@@ -293,31 +295,31 @@ export default function ProfilePage() {
                     </span>
                   </div>
                 </div>
-                <button className="w-full mt-4 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+                {/* <button className="w-full mt-4 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
                   Change Password
-                </button>
+                </button> */}
               </div>
 
               {/* Quick Actions */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+              {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">
                   Quick Actions
                 </h3>
                 <div className="space-y-2">
-                  <button className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg transition-colors text-sm">
+                  <button className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg transition-colors text-sm text-gray-700">
                     Download Account Data
                   </button>
-                  <button className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg transition-colors text-sm">
+                  <button className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg transition-colors text-sm text-gray-700">
                     Privacy Settings
                   </button>
-                  <button className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg transition-colors text-sm">
+                  <button className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg transition-colors text-sm text-gray-700">
                     Notification Preferences
                   </button>
                   <button className="w-full text-left px-4 py-2 hover:bg-red-50 rounded-lg transition-colors text-sm text-red-600">
                     Delete Account
                   </button>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

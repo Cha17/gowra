@@ -190,7 +190,11 @@ export default function MyEventsAndRegistrationsPage() {
                                   {registration.ticket_quantity > 1
                                     ? 's'
                                     : ''}{' '}
-                                  • ₱{registration.payment_amount}
+                                  •{' '}
+                                  {registration.payment_amount === '0' ||
+                                  registration.payment_amount === '0.00'
+                                    ? 'Free'
+                                    : `₱ ${registration.payment_amount}`}
                                 </div>
                                 <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-gray-600">
                                   <span className="inline-flex items-center">

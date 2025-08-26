@@ -222,7 +222,7 @@ export default function Header() {
                       </Link>
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem
+                    {/* <DropdownMenuItem
                       asChild
                       className="px-3 py-2 hover:bg-blue-50 focus:bg-blue-50"
                     >
@@ -233,7 +233,7 @@ export default function Header() {
                         <Settings className="w-4 h-4 mr-2 text-gray-500" />
                         Settings
                       </Link>
-                    </DropdownMenuItem>
+                    </DropdownMenuItem> */}
 
                     <DropdownMenuSeparator />
 
