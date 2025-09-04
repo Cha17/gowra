@@ -16,13 +16,15 @@ import {
   Users2,
   CalendarDays,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Suspense, useMemo, useState, useEffect } from 'react';
 import { apiClient, API_ENDPOINTS } from '@/src/lib/api';
 import { toast } from 'sonner';
 import { useAuthContext } from '@/src/components/providers/NeonAuthProvider';
-import { useEffect } from 'react';
 
-export default function PreviewEventPage() {
+export const dynamic = 'force-dynamic';
+
+// Component that uses useSearchParams - wrapped in Suspense
+function PreviewEventContent() {
   const router = useRouter();
   const params = useSearchParams();
   const { user, isAuthenticated } = useAuthContext();
@@ -339,5 +341,23 @@ export default function PreviewEventPage() {
         </div>
       </div>
     </>
+  );
+}
+
+// Main component with Suspense wrapper
+export default function PreviewEventPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+            <p>Loading preview...</p>
+          </div>
+        </div>
+      }
+    >
+      <PreviewEventContent />
+    </Suspense>
   );
 }

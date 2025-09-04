@@ -30,28 +30,54 @@ interface Event {
 }
 
 export default function Home() {
+  // This code block initializes state variables for managing featured events and a loading indicator,
+  // and then fetches featured event data from an API when the component mounts.
+
+  // `featuredEvents` is a state variable that will hold an array of `Event` objects.
+  // It's initialized as an empty array `[]`. `setFeaturedEvents` is the function used to update this state.
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
+
+  // `loading` is a state variable that indicates whether data is currently being fetched.
+  // It's initialized to `true` because data fetching starts immediately when the component mounts.
+  // `setLoading` is the function used to update this state.
   const [loading, setLoading] = useState(true);
 
+  // `useEffect` is a React Hook that lets you synchronize a component with an external system.
+  // In this case, it's used to perform data fetching, which is a side effect.
+  // The empty dependency array `[]` means this effect runs only once after the initial render.
   useEffect(() => {
+    // `fetchFeaturedEvents` is an asynchronous function responsible for making the API call.
     const fetchFeaturedEvents = async () => {
       try {
+        // Makes a GET request to the `/api/events` endpoint.
+        // It includes query parameters to filter for 'published' events and limit the results to 3.
         const response = await apiClient.get(
           '/api/events?status=published&limit=3'
         );
+        // Logs the full API response to the console for debugging purposes.
         console.log('API Response:', response); // Debug log
+
+        // Checks if the response indicates success and contains data.
+        // The `(response as any)` cast is used to bypass TypeScript's strict type checking
+        // if the `apiClient.get` return type doesn't explicitly include `success` and `data` properties.
         if ((response as any).success && (response as any).data) {
+          // If successful, updates the `featuredEvents` state with the `events` array from the response data.
           setFeaturedEvents((response as any).data.events);
         }
       } catch (error) {
+        // If an error occurs during the API call, it's caught here and logged to the console.
         console.error('Error fetching featured events:', error);
       } finally {
+        // This block always executes after the `try` or `catch` block.
+        // It sets the `loading` state to `false`, indicating that the data fetching process has completed,
+        // regardless of whether it was successful or encountered an error.
         setLoading(false);
       }
     };
 
+    // Calls the `fetchFeaturedEvents` function to initiate the data fetching process.
     fetchFeaturedEvents();
-  }, []);
+  }, []); // The empty array ensures this effect runs only once on component mount.
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'Date TBD';

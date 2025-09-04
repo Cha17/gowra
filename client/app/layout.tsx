@@ -37,6 +37,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Background />
+        {/* Authentication System */}
         <NeonAuthProvider>
           <Header />
           <main>{children}</main>
