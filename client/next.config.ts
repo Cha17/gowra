@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    unoptimized: true,
     domains: ['drive.google.com', 'lh3.googleusercontent.com'],
   },
   serverExternalPackages: ['@stackframe/react'],
@@ -19,7 +20,9 @@ const nextConfig: NextConfig = {
   distDir: '.next',
   generateBuildId: async () => {
     return 'build-' + Date.now();
-  }
+  },
+  trailingSlash: true,
+  output: 'export',
 };
 
 export default nextConfig;
