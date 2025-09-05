@@ -19,7 +19,14 @@ const nextConfig: NextConfig = {
     distDir: '.next',
     generateBuildId: async () => {
       return 'build-' + Date.now();
-    }
+    },
+    // Enable static export for Cloudflare Pages
+  output: 'export',
+  trailingSlash: true,
+ 
+  async generateStaticParams() {
+    return [];
+  },
 };
 
 export default nextConfig;
