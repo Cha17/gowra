@@ -7,11 +7,8 @@
     "dev:staging": "NEXT_PUBLIC_API_URL=https://gowwra-api-worker-staging.charlcrtz17.workers.dev next dev",
     "dev:production": "NEXT_PUBLIC_API_URL=https://gowwra-api-worker-production.charlcrtz17.workers.dev next dev",
     "build": "next build",
-    "build:staging": "rm -rf .next/cache && NEXT_PUBLIC_API_URL=https://gowwra-api-worker-staging.charlcrtz17.workers.dev npx @cloudflare/next-on-pages",
+    "build:staging": "NEXT_PUBLIC_API_URL=https://gowwra-api-worker-staging.charlcrtz17.workers.dev next build",
     "build:production": "NEXT_PUBLIC_API_URL=https://gowwra-api-worker-production.charlcrtz17.workers.dev next build",
-    "prebuild": "rm -rf .next/cache cache/",
-    "preview": "npx wrangler pages dev .vercel/output/static --compatibility-date=2023-05-18",
-    "clean": "rm -rf .next node_modules/.cache",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
@@ -41,7 +38,6 @@
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "^1.13.16",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
