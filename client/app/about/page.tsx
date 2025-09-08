@@ -20,7 +20,7 @@ export default function AboutPage() {
               href="/events"
               className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white font-semibold rounded-full hover:bg-purple-700 transition-colors"
             >
-              Explore Events
+              Explore Events Now
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link
