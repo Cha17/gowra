@@ -10,13 +10,21 @@
     "staging": {
       "name": "gowwra-api-worker-staging",
       "vars": {
-        "ENVIRONMENT": "staging"
+        "ENVIRONMENT": "staging",
+        "NEXTAPI_BASE_URL": "https://api.partners.nextpay.world",
+        "CHECKOUT_ENABLED": true,
+        "NEXTPAY_API_KEY": "YOUR_NEXTPAY_API_KEY_HERE",
+        "NEXTPAY_SECRET_KEY": "YOUR_NEXTPAY_SECRET_KEY_HERE"
       }
     },
     "production": {
       "name": "gowwra-api-worker-production", 
       "vars": {
-        "ENVIRONMENT": "production"
+        "ENVIRONMENT": "production",
+        "NEXTAPI_BASE_URL": "https://api.partners.nextpay.world",
+        "CHECKOUT_ENABLED": true,
+        "NEXTPAY_API_KEY": "YOUR_NEXTPAY_API_KEY_HERE",
+        "NEXTPAY_SECRET_KEY": "YOUR_NEXTPAY_SECRET_KEY_HERE"
       }
     }
   }

@@ -26,6 +26,22 @@ interface Registration {
   event_status: string;
 }
 
+interface Order {
+  id: string;
+  event_id: string;
+  user_id: string;
+  total_amount: number;
+  currency: string;
+  status: 'pending' | 'paid' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+  event_name?: string;
+  event_date?: string;
+  event_venue?: string;
+  event_organizer?: string;
+  event_image?: string;
+}
+
 interface RegistrationsResponse {
   success: boolean;
   data: {
@@ -44,6 +60,8 @@ interface RegistrationsResponse {
 export default function MyEventsAndRegistrationsPage() {
   const { user, apiCallWithRefresh } = useAuthContext();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
+  // orders removed as payments/checkout are removed
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Set page title
@@ -65,6 +83,8 @@ export default function MyEventsAndRegistrationsPage() {
       if (registrationsResponse.success) {
         setRegistrations(registrationsResponse.data.registrations);
       }
+
+      // Orders fetching removed
     } catch (error) {
       console.error('Error fetching user data:', error);
       toast.error('Failed to load tickets');
@@ -108,6 +128,25 @@ export default function MyEventsAndRegistrationsPage() {
     }
   };
 
+  const getOrderStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return 'text-green-600 bg-green-100';
+      case 'pending':
+        return 'text-yellow-600 bg-yellow-100';
+      case 'cancelled':
+        return 'text-red-600 bg-red-100';
+      default:
+        return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const formatOrderAmount = (amount: number) => {
+    return `₱${(amount / 100).toFixed(2)}`;
+  };
+
+  // handleCheckout removed
+
   const getUpcomingEvents = () => {
     const now = new Date();
     return registrations.filter(reg => new Date(reg.event_date) > now);
@@ -118,8 +157,13 @@ export default function MyEventsAndRegistrationsPage() {
     return registrations.filter(reg => new Date(reg.event_date) <= now);
   };
 
+  const getPendingOrders = () => {
+    return orders.filter(order => order.status === 'pending');
+  };
+
   const upcomingEvents = getUpcomingEvents();
   const pastEvents = getPastEvents();
+  const pendingOrders = getPendingOrders();
 
   return (
     <ProtectedRoute>
@@ -152,6 +196,8 @@ export default function MyEventsAndRegistrationsPage() {
           ) : (
             <>
               <div className="space-y-8">
+                {/* Pending payments removed */}
+
                 {/* Upcoming Tickets */}
                 <section className="bg-white rounded-xl shadow-sm border border-gray-200">
                   <div className="p-5 border-b border-gray-200">

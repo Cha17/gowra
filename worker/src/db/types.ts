@@ -76,6 +76,8 @@ export interface Database {
 	events: KyselifyTable<typeof schema.events>;
 	registrations: KyselifyTable<typeof schema.registrations>;
 	payment_history: KyselifyTable<typeof schema.payment_history>;
+	orders: KyselifyTable<typeof schema.orders>;
+	checkouts: KyselifyTable<typeof schema.checkouts>;
 }
 
 // Individual table types for type safety
@@ -84,6 +86,8 @@ export type AdminUserTable = Database['admin_users'];
 export type EventTable = Database['events'];
 export type RegistrationTable = Database['registrations'];
 export type PaymentHistoryTable = Database['payment_history'];
+export type OrderTable = Database['orders'];
+export type CheckoutTable = Database['checkouts'];
 
 // Select types (for reading data)
 export type User = UserTable;
@@ -91,6 +95,8 @@ export type AdminUser = AdminUserTable;
 export type Event = EventTable;
 export type Registration = RegistrationTable;
 export type PaymentHistoryRecord = PaymentHistoryTable;
+export type OrderRecord = OrderTable;
+export type CheckoutRecord = CheckoutTable;
 
 // Insert types (for creating new records)
 export type NewUser = Omit<User, 'id' | 'created_at' | 'updated_at'> & {
@@ -122,6 +128,18 @@ export type NewRegistration = Omit<Registration, 'id' | 'registration_date' | 'c
 export type NewPaymentHistory = Omit<PaymentHistoryRecord, 'id' | 'created_at'> & {
 	id?: string;
 	created_at?: Date;
+};
+
+export type NewOrder = Omit<OrderRecord, 'id' | 'created_at' | 'updated_at'> & {
+	id?: string;
+	created_at?: Date;
+	updated_at?: Date;
+};
+
+export type NewCheckout = Omit<CheckoutRecord, 'id' | 'created_at' | 'updated_at'> & {
+	id?: string;
+	created_at?: Date;
+	updated_at?: Date;
 };
 
 // Update types (for updating existing records)

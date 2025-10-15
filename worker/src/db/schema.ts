@@ -5,6 +5,10 @@ export const eventStatusEnum = pgEnum('event_status', ['draft', 'published', 'ca
 export const paymentStatusEnum = pgEnum('payment_status', ['pending', 'paid', 'failed', 'refunded']);
 // User role enum - defines if user is regular user or organizer
 export const userRoleEnum = pgEnum('user_role', ['user', 'organizer']);
+// Order status enum
+export const orderStatusEnum = pgEnum('order_status', ['pending', 'paid', 'cancelled']);
+// Checkout status enum
+export const checkoutStatusEnum = pgEnum('checkout_status', ['created', 'succeeded', 'failed']);
 
 // Users table (regular users + organizers)
 export const users = pgTable('users', {
@@ -87,6 +91,46 @@ export const payment_history = pgTable('payment_history', {
   created_at: timestamp('created_at').defaultNow().notNull(),
 });
 
+// Orders table - for one-time ticket purchases
+export const orders = pgTable('orders', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  event_id: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  total_amount: integer('total_amount').notNull(), // in cents/minor units
+  currency: varchar('currency', { length: 3 }).default('PHP').notNull(),
+  status: orderStatusEnum('status').default('pending').notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Checkouts table - tracks payment attempts for orders
+export const checkouts = pgTable('checkouts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  order_id: uuid('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  payment_intent_id: varchar('payment_intent_id', { length: 255 }).notNull().unique(),
+  amount: integer('amount').notNull(), // in cents/minor units
+  currency: varchar('currency', { length: 3 }).default('PHP').notNull(),
+  status: checkoutStatusEnum('status').default('created').notNull(),
+  qr_base64: text('qr_base64').notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Webhook events table for idempotency
+export const webhook_events = pgTable('webhook_events', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  payment_intent_id: varchar('payment_intent_id', { length: 255 }).notNull(),
+  processed_at: timestamp('processed_at').defaultNow().notNull(),
+});
+
+// Ticket issuance records (idempotency for fulfillment)
+export const ticket_issuances = pgTable('ticket_issuances', {
+  order_id: uuid('order_id').primaryKey().references(() => orders.id, { onDelete: 'cascade' }),
+  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  event_id: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+});
+
 // Export types for use in the application
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -98,3 +142,7 @@ export type Registration = typeof registrations.$inferSelect;
 export type NewRegistration = typeof registrations.$inferInsert;
 export type PaymentHistory = typeof payment_history.$inferSelect;
 export type NewPaymentHistory = typeof payment_history.$inferInsert;
+export type Order = typeof orders.$inferSelect;
+export type NewOrder = typeof orders.$inferInsert;
+export type Checkout = typeof checkouts.$inferSelect;
+export type NewCheckout = typeof checkouts.$inferInsert;

@@ -3,6 +3,8 @@ import { sql } from "drizzle-orm"
 
 export const eventStatus = pgEnum("event_status", ['draft', 'published', 'cancelled', 'completed'])
 export const paymentStatus = pgEnum("payment_status", ['pending', 'paid', 'failed', 'refunded'])
+export const orderStatus = pgEnum("order_status", ['pending', 'paid', 'cancelled'])
+export const checkoutStatus = pgEnum("checkout_status", ['created', 'succeeded', 'failed'])
 
 
 export const adminRefreshTokens = pgTable("admin_refresh_tokens", {
@@ -108,6 +110,47 @@ export const adminUsers = pgTable("admin_users", {
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	unique("admin_users_email_unique").on(table.email),
+]);
+
+export const orders = pgTable("orders", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	eventId: uuid("event_id").notNull(),
+	userId: uuid("user_id").notNull(),
+	totalAmount: integer("total_amount").notNull(),
+	currency: varchar({ length: 3 }).default('PHP').notNull(),
+	status: orderStatus().default('pending').notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	foreignKey({
+		columns: [table.eventId],
+		foreignColumns: [events.id],
+		name: "orders_event_id_events_id_fk"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.userId],
+		foreignColumns: [users.id],
+		name: "orders_user_id_users_id_fk"
+	}).onDelete("cascade"),
+]);
+
+export const checkouts = pgTable("checkouts", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	orderId: uuid("order_id").notNull(),
+	paymentIntentId: varchar("payment_intent_id", { length: 255 }).notNull(),
+	amount: integer().notNull(),
+	currency: varchar({ length: 3 }).default('PHP').notNull(),
+	status: checkoutStatus().default('created').notNull(),
+	qrBase64: text("qr_base64").notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	foreignKey({
+		columns: [table.orderId],
+		foreignColumns: [orders.id],
+		name: "checkouts_order_id_orders_id_fk"
+	}).onDelete("cascade"),
+	unique("checkouts_payment_intent_id_unique").on(table.paymentIntentId),
 ]);
 
 export const drizzleMigrations = pgTable("drizzle_migrations", {

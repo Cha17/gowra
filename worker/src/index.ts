@@ -12,7 +12,10 @@ import { authRoutes } from "./routes/auth";
 import { adminRoutes } from "./routes/admin";
 import { eventRoutes } from "./routes/events-simple";
 import { registrationRoutes } from "./routes/registrations";
-import { paymentRoutes } from "./routes/payments";
+// removed payments route
+import { ordersRoutes } from "./routes/orders";
+// removed checkout route
+// removed webhook route
 
 const appBase = new Hono<{
 	Bindings: EnvBinding;
@@ -43,7 +46,8 @@ const app = appBase
 	.route("/api/admin", adminRoutes)
 	.route("/api/events", eventRoutes)
 	.route("/api/registrations", registrationRoutes)
-	.route("/api/payments", paymentRoutes)
+	.route("/api/orders", ordersRoutes)
+
 
 	.notFound(notFoundHandler)
 	.onError(onErrorHandler);

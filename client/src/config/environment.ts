@@ -31,6 +31,7 @@ export const environment = {
   FEATURES: {
     ORGANIZER_ROLE: true, // Enable organizer features
     DEBUG_MODE: process.env.NODE_ENV === 'development',
+    CHECKOUT: process.env.NEXT_PUBLIC_CHECKOUT_ENABLED === 'true',
   }
 };
 

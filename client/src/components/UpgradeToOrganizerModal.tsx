@@ -208,7 +208,7 @@ export default function UpgradeToOrganizerModal({
 
           {/* Organization Type */}
           <div>
-            <label className="block text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <label className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
               <Users className="w-5 h-5 text-pink-600" />
               Organization Type *
             </label>
@@ -217,7 +217,7 @@ export default function UpgradeToOrganizerModal({
               onChange={e =>
                 handleInputChange('organization_type', e.target.value)
               }
-              className={`w-full px-4 py-4 border-2 rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-200 transition-all text-gray-900 font-medium ${
+              className={`w-full gap-10 px-4 py-4 border-2 rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-200 transition-all text-gray-900 font-medium ${
                 errors.organization_type
                   ? 'border-red-400 bg-red-50'
                   : 'border-gray-300 hover:border-purple-400 focus:border-purple-500'

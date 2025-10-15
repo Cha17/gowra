@@ -233,6 +233,9 @@ export default function EventDetailPage() {
         setShowConfirmation(false);
         // Refresh event data to update registration count
         fetchEvent();
+
+        // Redirect to tickets page
+        router.push('/dashboard');
       } else {
         toast.error(response.error || 'Registration failed');
       }

@@ -109,10 +109,10 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="text-base text-gray-500 block w-full pl-12 pr-12 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
+                  className="text-base text-gray-500 block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all bg-white/50 backdrop-blur-sm"
                   placeholder="Enter your password"
                 />
-                <button
+                {/* <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-4 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
@@ -122,7 +122,7 @@ export default function LoginPage() {
                   ) : (
                     <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
                   )}
-                </button>
+                </button> */}
               </div>
             </div>
 
