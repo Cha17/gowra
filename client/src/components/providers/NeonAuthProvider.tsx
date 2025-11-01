@@ -12,7 +12,7 @@ interface AuthContextType {
   login: (
     email: string,
     password: string
-  ) => Promise<{ success: boolean; error?: string }>;
+  ) => Promise<{ success: boolean; isAdmin?: boolean; error?: string }>;
   register: (
     email: string,
     password: string,

@@ -43,7 +43,7 @@ export default function LoginPage() {
       }
 
       // Check if user is admin and redirect accordingly
-      if ((result as any).isAdmin) {
+      if (result.isAdmin) {
         window.location.href = '/admin';
       } else {
         window.location.href = '/';
