@@ -31,6 +31,10 @@ const ORGANIZATION_TYPES = [
   'Sports Club',
   'Cultural Group',
   'Professional Association',
+  'Entertainment & Media',
+  'Technology Company',
+  'Healthcare Organization',
+  'Arts & Creative',
   'Other',
 ];
 
@@ -217,12 +221,15 @@ export default function UpgradeToOrganizerModal({
               onChange={e =>
                 handleInputChange('organization_type', e.target.value)
               }
-              className={`w-full gap-10 px-4 py-4 border-2 rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-200 transition-all text-gray-900 font-medium ${
+              className={`w-full px-4 pr-10 py-4 border-2 rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-200 transition-all text-gray-900 font-medium appearance-none bg-white bg-[url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E")] bg-no-repeat bg-[right_0.75rem_center] ${
                 errors.organization_type
                   ? 'border-red-400 bg-red-50'
                   : 'border-gray-300 hover:border-purple-400 focus:border-purple-500'
               }`}
               disabled={isLoading}
+              style={{
+                paddingRight: '2.5rem',
+              }}
             >
               <option value="" className="text-gray-500">
                 Select organization type

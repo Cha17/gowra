@@ -96,6 +96,8 @@ export default function RegisterPage() {
     );
 
     if (result.success) {
+      // Mark that user just registered so login can show welcome instead of welcome back
+      localStorage.setItem('just_registered', 'true');
       toast.success('Registration successful! Please log in to continue.');
       // Redirect to login page after successful registration
       setTimeout(() => {

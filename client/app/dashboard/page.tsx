@@ -122,6 +122,7 @@ export default function MyEventsAndRegistrationsPage() {
         return 'text-yellow-600 bg-yellow-100';
       case 'failed':
       case 'refunded':
+      case 'cancelled':
         return 'text-red-600 bg-red-100';
       default:
         return 'text-gray-600 bg-gray-100';
@@ -149,12 +150,22 @@ export default function MyEventsAndRegistrationsPage() {
 
   const getUpcomingEvents = () => {
     const now = new Date();
-    return registrations.filter(reg => new Date(reg.event_date) > now);
+    return registrations.filter(
+      reg =>
+        new Date(reg.event_date) > now && reg.payment_status !== 'cancelled'
+    );
+  };
+
+  const getCancelledEvents = () => {
+    return registrations.filter(reg => reg.payment_status === 'cancelled');
   };
 
   const getPastEvents = () => {
     const now = new Date();
-    return registrations.filter(reg => new Date(reg.event_date) <= now);
+    return registrations.filter(
+      reg =>
+        new Date(reg.event_date) <= now && reg.payment_status !== 'cancelled'
+    );
   };
 
   const getPendingOrders = () => {
@@ -162,6 +173,7 @@ export default function MyEventsAndRegistrationsPage() {
   };
 
   const upcomingEvents = getUpcomingEvents();
+  const cancelledEvents = getCancelledEvents();
   const pastEvents = getPastEvents();
   const pendingOrders = getPendingOrders();
 
@@ -317,6 +329,82 @@ export default function MyEventsAndRegistrationsPage() {
                                   className="px-3 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700"
                                 >
                                   View ticket
+                                </Link>
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </section>
+
+                {/* Cancelled Tickets */}
+                <section className="bg-white rounded-xl shadow-sm border border-gray-200">
+                  <div className="p-5 border-b border-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Cancelled tickets
+                    </h2>
+                  </div>
+                  <div className="p-5">
+                    {cancelledEvents.length === 0 ? (
+                      <div className="text-center py-10">
+                        <p className="text-gray-600">No cancelled tickets.</p>
+                      </div>
+                    ) : (
+                      <ul className="space-y-4">
+                        {cancelledEvents.map(registration => (
+                          <li
+                            key={registration.id}
+                            className="p-4 border border-red-200 rounded-lg bg-red-50"
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-gray-900 truncate">
+                                  {registration.event_name}
+                                </h3>
+                                <div className="mt-1 text-sm text-gray-500">
+                                  {registration.ticket_quantity} ticket
+                                  {registration.ticket_quantity > 1
+                                    ? 's'
+                                    : ''}{' '}
+                                  •{' '}
+                                  {registration.payment_amount === '0' ||
+                                  registration.payment_amount === '0.00'
+                                    ? 'Free'
+                                    : `₱ ${registration.payment_amount}`}
+                                </div>
+                                <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                                  <span className="inline-flex items-center">
+                                    <Calendar className="h-4 w-4 mr-1" />
+                                    {formatDate(registration.event_date)}
+                                  </span>
+                                  <span className="inline-flex items-center">
+                                    <MapPin className="h-4 w-4 mr-1" />
+                                    {registration.event_venue}
+                                  </span>
+                                  <span className="inline-flex items-center">
+                                    <User className="h-4 w-4 mr-1" />
+                                    {registration.event_organizer}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex-shrink-0 flex items-center gap-3">
+                                <span
+                                  className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
+                                    registration.payment_status
+                                  )}`}
+                                >
+                                  {registration.payment_status
+                                    .charAt(0)
+                                    .toUpperCase() +
+                                    registration.payment_status.slice(1)}
+                                </span>
+                                <Link
+                                  href={`/tickets/${registration.id}`}
+                                  className="px-3 py-2 bg-white border border-gray-300 text-sm rounded-md hover:bg-gray-50"
+                                >
+                                  View details
                                 </Link>
                               </div>
                             </div>

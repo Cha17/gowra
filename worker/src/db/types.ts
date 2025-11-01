@@ -36,7 +36,7 @@ export type KyselifyMaterializeView<T extends PgMaterializedView> = {
 
 // Database enum types
 export type EventStatus = 'draft' | 'published' | 'cancelled' | 'completed';
-export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded' | 'cancelled';
 export type UserRole = 'user' | 'organizer';
 
 export interface WorkerUser {
@@ -78,6 +78,11 @@ export interface Database {
 	payment_history: KyselifyTable<typeof schema.payment_history>;
 	orders: KyselifyTable<typeof schema.orders>;
 	checkouts: KyselifyTable<typeof schema.checkouts>;
+	ticket_issuances: KyselifyTable<typeof schema.ticket_issuances>;
+	user_accounts: KyselifyTable<typeof schema.user_accounts>;
+	payment_intents: KyselifyTable<typeof schema.payment_intents>;
+	webhook_logs: KyselifyTable<typeof schema.webhook_logs>;
+	webhook_idempotency: KyselifyTable<typeof schema.webhook_idempotency>;
 }
 
 // Individual table types for type safety
@@ -88,6 +93,11 @@ export type RegistrationTable = Database['registrations'];
 export type PaymentHistoryTable = Database['payment_history'];
 export type OrderTable = Database['orders'];
 export type CheckoutTable = Database['checkouts'];
+export type TicketIssuanceTable = Database['ticket_issuances'];
+export type UserAccountTable = Database['user_accounts'];
+export type PaymentIntentTable = Database['payment_intents'];
+export type WebhookLogTable = Database['webhook_logs'];
+export type WebhookIdempotencyTable = Database['webhook_idempotency'];
 
 // Select types (for reading data)
 export type User = UserTable;
@@ -97,6 +107,11 @@ export type Registration = RegistrationTable;
 export type PaymentHistoryRecord = PaymentHistoryTable;
 export type OrderRecord = OrderTable;
 export type CheckoutRecord = CheckoutTable;
+export type TicketIssuanceRecord = TicketIssuanceTable;
+export type UserAccountRecord = UserAccountTable;
+export type PaymentIntentRecord = PaymentIntentTable;
+export type WebhookLogRecord = WebhookLogTable;
+export type WebhookIdempotencyRecord = WebhookIdempotencyTable;
 
 // Insert types (for creating new records)
 export type NewUser = Omit<User, 'id' | 'created_at' | 'updated_at'> & {
@@ -140,6 +155,31 @@ export type NewCheckout = Omit<CheckoutRecord, 'id' | 'created_at' | 'updated_at
 	id?: string;
 	created_at?: Date;
 	updated_at?: Date;
+};
+
+export type NewTicketIssuance = Omit<TicketIssuanceRecord, 'created_at'> & {
+	created_at?: Date;
+};
+
+export type NewUserAccount = Omit<UserAccountRecord, 'id' | 'created_at' | 'updated_at'> & {
+	id?: string;
+	created_at?: Date;
+	updated_at?: Date;
+};
+
+export type NewPaymentIntent = Omit<PaymentIntentRecord, 'id' | 'created_at' | 'updated_at'> & {
+	id?: string;
+	created_at?: Date;
+	updated_at?: Date;
+};
+
+export type NewWebhookLog = Omit<WebhookLogRecord, 'id' | 'created_at'> & {
+	id?: string;
+	created_at?: Date;
+};
+
+export type NewWebhookIdempotency = Omit<WebhookIdempotencyRecord, 'created_at'> & {
+	created_at?: Date;
 };
 
 // Update types (for updating existing records)

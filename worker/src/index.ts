@@ -14,8 +14,10 @@ import { eventRoutes } from "./routes/events-simple";
 import { registrationRoutes } from "./routes/registrations";
 // removed payments route
 import { ordersRoutes } from "./routes/orders";
+import { nextpayRoutes } from "./routes/nextpay";
+import { paymentProcessingRoutes } from "./routes/payment-processing";
+import { webhookRoutes } from "./routes/webhook";
 // removed checkout route
-// removed webhook route
 
 const appBase = new Hono<{
 	Bindings: EnvBinding;
@@ -47,6 +49,9 @@ const app = appBase
 	.route("/api/events", eventRoutes)
 	.route("/api/registrations", registrationRoutes)
 	.route("/api/orders", ordersRoutes)
+	.route("/api/nextpay", nextpayRoutes)
+	.route("/api/payment-processing", paymentProcessingRoutes)
+	.route("/api/webhook", webhookRoutes)
 
 
 	.notFound(notFoundHandler)

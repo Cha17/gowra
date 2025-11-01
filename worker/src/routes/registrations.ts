@@ -245,10 +245,20 @@ registrationRoutes.delete('/:id', authMiddleware, async (c) => {
         message: 'Cannot cancel tickets that are already paid'
       }, 400);
     }
+
+    // Check if ticket is already cancelled
+    if (registration.payment_status === 'cancelled') {
+      return c.json({
+        success: false,
+        error: 'Ticket already cancelled',
+        message: 'This ticket has already been cancelled'
+      }, 400);
+    }
     
-    // Delete the registration
+    // Update registration status to cancelled instead of deleting
     await db
-      .deleteFrom('registrations')
+      .updateTable('registrations')
+      .set({ payment_status: 'cancelled' })
       .where('id', '=', registrationId)
       .execute();
     

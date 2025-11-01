@@ -41,7 +41,15 @@ export default function RootLayout({
         <NeonAuthProvider>
           <Header />
           <main>{children}</main>
-          <Toaster position="top-right" />
+          <Toaster
+            position="top-right"
+            expand={false}
+            richColors
+            visibleToasts={1}
+            toastOptions={{
+              duration: 3000,
+            }}
+          />
           {/* <DebugAuthState /> */}
         </NeonAuthProvider>
       </body>

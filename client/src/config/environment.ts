@@ -6,7 +6,7 @@ export const environment = {
   
   // API URLs for different environments
   API_URLS: {
-    development: 'https://gowwra-api-worker-staging.charlcrtz17.workers.dev',
+    // development: 'http://localhost:8787',
     staging: 'https://gowwra-api-worker-staging.charlcrtz17.workers.dev', 
     production: 'https://gowwra-api-worker-production.charlcrtz17.workers.dev', // Update this with your actual production URL
   },
@@ -20,7 +20,7 @@ export const environment = {
     
     // Fallback to environment-based URL
     const env = process.env.NODE_ENV || 'development';
-    return environment.API_URLS[env as keyof typeof environment.API_URLS] || environment.API_URLS.development;
+    return environment.API_URLS[env as keyof typeof environment.API_URLS] ;
   },
   
   // Easy switching for testing

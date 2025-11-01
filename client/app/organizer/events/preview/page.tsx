@@ -118,7 +118,7 @@ function PreviewEventContent() {
       }>(API_ENDPOINTS.events, payload);
       if ((res as any).success && (res as any).event?.id) {
         toast.success('Event published');
-        router.push(`/organizer/events/${(res as any).event.id}/edit`);
+        router.push('/organizer/events');
       } else {
         toast.error('Failed to publish event');
       }

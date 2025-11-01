@@ -92,7 +92,12 @@ export default function EditEventPage() {
             details: e.details || '',
             date: e.date ? new Date(e.date).toISOString().slice(0, 16) : '',
             venue: e.venue || '',
-            price: typeof e.price === 'number' ? e.price : '',
+            price:
+              typeof e.price === 'number'
+                ? e.price
+                : e.price
+                ? parseFloat(String(e.price))
+                : '',
             capacity: typeof e.capacity === 'number' ? e.capacity : '',
             imageUrl: e.image_url || '',
             registrationDeadline: e.registration_deadline

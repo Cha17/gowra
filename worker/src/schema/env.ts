@@ -14,6 +14,8 @@ export const EnvBindingSchema = z.object({
   NEXTAPI_BASE_URL: z.string(),
   NEXTPAY_API_KEY: z.string(),
   NEXTPAY_SECRET_KEY: z.string(),
+  NEXTPAY_TIMEOUT: z.number().min(1000).max(60000).optional().default(30000),
+  NEXTPAY_RETRY_ATTEMPTS: z.number().min(1).max(10).optional().default(3),
   NEXTAPI_CREATE_INTENT_PATH: z.string().optional(),
   NEXTPAY_ACCOUNT_ID: z.string().optional(),
   WEBHOOK_SECRET: z.string().optional(),

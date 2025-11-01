@@ -2,13 +2,15 @@ import { pgTable, uuid, varchar, text, timestamp, decimal, integer, pgEnum, bool
 
 // Enums
 export const eventStatusEnum = pgEnum('event_status', ['draft', 'published', 'cancelled', 'completed']);
-export const paymentStatusEnum = pgEnum('payment_status', ['pending', 'paid', 'failed', 'refunded']);
+export const paymentStatusEnum = pgEnum('payment_status', ['pending', 'paid', 'failed', 'refunded', 'cancelled']);
 // User role enum - defines if user is regular user or organizer
 export const userRoleEnum = pgEnum('user_role', ['user', 'organizer']);
 // Order status enum
 export const orderStatusEnum = pgEnum('order_status', ['pending', 'paid', 'cancelled']);
 // Checkout status enum
 export const checkoutStatusEnum = pgEnum('checkout_status', ['created', 'succeeded', 'failed']);
+// Account status enum for NextPay
+export const accountStatusEnum = pgEnum('account_status', ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING']);
 
 // Users table (regular users + organizers)
 export const users = pgTable('users', {
@@ -131,6 +133,51 @@ export const ticket_issuances = pgTable('ticket_issuances', {
   created_at: timestamp('created_at').defaultNow().notNull(),
 });
 
+// NextPay User Accounts table - links users to NextPay accounts
+export const user_accounts = pgTable('user_accounts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  account_id: varchar('account_id', { length: 255 }).notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// NextPay Payment Intents table - stores payment intent data
+export const payment_intents = pgTable('payment_intents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  intent_id: varchar('intent_id', { length: 255 }).notNull(),
+  order_id: uuid('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  account_id: varchar('account_id', { length: 255 }).notNull(),
+  amount: varchar('amount', { length: 20 }).notNull(), // Store as string to avoid precision issues
+  currency: varchar('currency', { length: 3 }).default('PHP').notNull(),
+  status: varchar('status', { length: 50 }).default('PENDING').notNull(),
+  qr_code: text('qr_code').notNull(),
+  expires_at: timestamp('expires_at').notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Webhook Logs table - tracks webhook events
+export const webhook_logs = pgTable('webhook_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  webhook_id: varchar('webhook_id', { length: 255 }).notNull(),
+  event_type: varchar('event_type', { length: 100 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull(),
+  processed_at: timestamp('processed_at'),
+  error: text('error'),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Webhook Idempotency table - prevents duplicate webhook processing
+export const webhook_idempotency = pgTable('webhook_idempotency', {
+  key: varchar('key', { length: 255 }).primaryKey(),
+  event_id: varchar('event_id', { length: 255 }).notNull(),
+  processed: boolean('processed').default(false).notNull(),
+  result: text('result'),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  processed_at: timestamp('processed_at'),
+});
+
 // Export types for use in the application
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -146,3 +193,13 @@ export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
 export type Checkout = typeof checkouts.$inferSelect;
 export type NewCheckout = typeof checkouts.$inferInsert;
+export type TicketIssuance = typeof ticket_issuances.$inferSelect;
+export type NewTicketIssuance = typeof ticket_issuances.$inferInsert;
+export type UserAccount = typeof user_accounts.$inferSelect;
+export type NewUserAccount = typeof user_accounts.$inferInsert;
+export type PaymentIntent = typeof payment_intents.$inferSelect;
+export type NewPaymentIntent = typeof payment_intents.$inferInsert;
+export type WebhookLog = typeof webhook_logs.$inferSelect;
+export type NewWebhookLog = typeof webhook_logs.$inferInsert;
+export type WebhookIdempotency = typeof webhook_idempotency.$inferSelect;
+export type NewWebhookIdempotency = typeof webhook_idempotency.$inferInsert;

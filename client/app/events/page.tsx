@@ -1,66 +1,162 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Search, Calendar, MapPin, Users, ArrowRight } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { ArrowUpDown } from 'lucide-react';
 import { apiClient } from '@/src/lib/api';
 import { toast } from 'sonner';
 import Background from '@/src/components/ui/Background';
-import Image from 'next/image';
-import { EVENT_TYPES_WITH_ALL } from '@/src/lib/constants';
-
-interface Event {
-  id: string;
-  name: string;
-  organizer: string;
-  details?: string | null;
-  date?: string | null;
-  image_url?: string | null;
-  venue?: string | null;
-  status?: string | null;
-  price?: string | null;
-  capacity?: number | null;
-  registration_deadline?: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-  registration_count?: number;
-}
+import {
+  EventCard,
+  EventCardSkeleton,
+  EventsEmptyState,
+  EventsPagination,
+  EventFilters,
+  type Event,
+  type EventFiltersState,
+} from '@/src/components/events';
 
 interface EventsResponse {
   success: boolean;
   data: {
     events: Event[];
+    pagination?: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
   };
   message: string;
 }
 
+type SortOption = 'date' | 'price' | 'popularity' | 'name';
+type SortOrder = 'asc' | 'desc';
+
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [eventTypeFilter, setEventTypeFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [sortBy, setSortBy] = useState<SortOption>('date');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 1,
+  });
+
+  const [filters, setFilters] = useState<EventFiltersState>({
+    search: '',
+    eventType: 'All Events',
+    minPrice: '',
+    maxPrice: '',
+    startDate: '',
+    endDate: '',
+    status: '',
+    organizer: '',
+    hasCapacity: false,
+  });
+
+  // Debounce search to avoid too many API calls
+  const [searchDebounce, setSearchDebounce] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchDebounce(filters.search);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [filters.search]);
 
   const fetchEvents = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (searchTerm) params.append('search', searchTerm);
-      if (eventTypeFilter && eventTypeFilter !== 'All Events') {
-        // For now, we'll use the search parameter for event type filtering
-        // You may need to update your API to support event type filtering
-        params.append('search', `${searchTerm} ${eventTypeFilter}`.trim());
+
+      // Server-side filters
+      if (searchDebounce) {
+        params.append('search', searchDebounce);
       }
-      // Remove pagination - fetch all events
-      params.append('limit', '100');
+      if (filters.status) {
+        params.append('status', filters.status);
+      }
+      if (filters.organizer) {
+        params.append('organizer', filters.organizer);
+      }
+
+      // Check if we need to fetch all events for client-side filtering
+      const hasClientSideFilters =
+        filters.minPrice ||
+        filters.maxPrice ||
+        filters.startDate ||
+        filters.endDate ||
+        filters.hasCapacity;
+
+      // If client-side filters are active, fetch more events (or all)
+      // Otherwise use server-side pagination
+      if (hasClientSideFilters) {
+        params.append('limit', '1000'); // Fetch a large number for client-side filtering
+      } else {
+        params.append('page', page.toString());
+        params.append('limit', limit.toString());
+      }
 
       const response = await apiClient.get<EventsResponse>(
         `/api/events?${params.toString()}`
       );
 
-      console.log('Events API Response:', response); // Debug log
-
       if (response.success && response.data) {
-        setEvents(response.data.events || []);
+        let fetchedEvents = response.data.events || [];
+
+        // Store raw events for client-side filtering
+        setRawEvents(fetchedEvents);
+
+        // Client-side filtering for price range, date range, and capacity
+        const filtered = applyClientSideFilters(fetchedEvents, filters);
+
+        // Store filtered events (sorting will be applied in useMemo)
+        setEvents(filtered);
+
+        // Calculate pagination based on filtered results (only available events)
+        const availableCount = filtered.filter(e => {
+          if (!e.date) return true;
+          return new Date(e.date) >= new Date();
+        }).length;
+
+        if (hasClientSideFilters) {
+          // Client-side pagination (after filtering)
+          const totalPages = Math.ceil(availableCount / limit);
+          setPagination({
+            page: 1, // Reset to first page
+            limit,
+            total: availableCount,
+            totalPages,
+          });
+          setPage(1);
+        } else {
+          // Server-side pagination
+          if (response.data.pagination) {
+            // Filter to count only available events
+            setPagination({
+              page: response.data.pagination.page,
+              limit: response.data.pagination.limit,
+              total: availableCount,
+              totalPages: Math.ceil(availableCount / limit),
+            });
+          } else {
+            // Fallback if pagination not provided
+            const totalPages = Math.ceil(availableCount / limit);
+            setPagination({
+              page,
+              limit,
+              total: availableCount,
+              totalPages,
+            });
+          }
+        }
       } else {
         toast.error('Failed to fetch events');
       }
@@ -72,47 +168,207 @@ export default function EventsPage() {
     }
   };
 
+  const applyClientSideFilters = (
+    events: Event[],
+    filters: EventFiltersState
+  ): Event[] => {
+    return events.filter(event => {
+      // Price range filter
+      if (filters.minPrice || filters.maxPrice) {
+        const price = parseFloat(event.price || '0');
+        const minPrice = filters.minPrice ? parseFloat(filters.minPrice) : 0;
+        const maxPrice = filters.maxPrice
+          ? parseFloat(filters.maxPrice)
+          : Infinity;
+
+        if (price < minPrice || price > maxPrice) {
+          return false;
+        }
+      }
+
+      // Date range filter
+      if (filters.startDate || filters.endDate) {
+        const eventDate = event.date ? new Date(event.date) : null;
+        if (!eventDate) return false;
+
+        if (filters.startDate) {
+          const startDate = new Date(filters.startDate);
+          if (eventDate < startDate) return false;
+        }
+
+        if (filters.endDate) {
+          const endDate = new Date(filters.endDate);
+          endDate.setHours(23, 59, 59, 999); // End of day
+          if (eventDate > endDate) return false;
+        }
+      }
+
+      // Has capacity filter
+      if (filters.hasCapacity) {
+        const spotsLeft =
+          (event.capacity || 0) - (event.registration_count || 0);
+        if (spotsLeft <= 0) return false;
+      }
+
+      // Event type filter (if it's not "All Events")
+      if (filters.eventType && filters.eventType !== 'All Events') {
+        // This would require an event_type field in the Event interface
+        // For now, we'll skip this or use search
+      }
+
+      return true;
+    });
+  };
+
+  const applySorting = (
+    events: Event[],
+    sortBy: SortOption,
+    order: SortOrder
+  ): Event[] => {
+    const sorted = [...events].sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortBy) {
+        case 'date':
+          const dateA = a.date ? new Date(a.date).getTime() : 0;
+          const dateB = b.date ? new Date(b.date).getTime() : 0;
+          comparison = dateA - dateB;
+          break;
+
+        case 'price':
+          const priceA = parseFloat(a.price || '0');
+          const priceB = parseFloat(b.price || '0');
+          comparison = priceA - priceB;
+          break;
+
+        case 'popularity':
+          const regA = a.registration_count || 0;
+          const regB = b.registration_count || 0;
+          comparison = regA - regB;
+          break;
+
+        case 'name':
+          comparison = (a.name || '').localeCompare(b.name || '');
+          break;
+      }
+
+      return order === 'asc' ? comparison : -comparison;
+    });
+
+    return sorted;
+  };
+
+  // Store raw fetched events (before client-side filtering)
+  const [rawEvents, setRawEvents] = useState<Event[]>([]);
+
   useEffect(() => {
     fetchEvents();
-  }, [searchTerm, eventTypeFilter]);
+  }, [page, limit, searchDebounce, filters.status, filters.organizer]);
 
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return 'Date TBD';
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
+  // Re-apply client-side filters when they change (without re-fetching)
+  useEffect(() => {
+    const hasClientSideFilters =
+      filters.minPrice ||
+      filters.maxPrice ||
+      filters.startDate ||
+      filters.endDate ||
+      filters.hasCapacity;
+
+    if (hasClientSideFilters && rawEvents.length > 0) {
+      // Re-apply client-side filters to raw events
+      const filtered = applyClientSideFilters(rawEvents, filters);
+      setEvents(filtered);
+
+      // Update pagination
+      const totalPages = Math.ceil(filtered.length / limit);
+      setPagination({
+        page: 1, // Reset to first page when filters change
+        limit,
+        total: filtered.length,
+        totalPages,
       });
-    } catch (error) {
-      return 'Date TBD';
+      setPage(1);
     }
+  }, [
+    filters.minPrice,
+    filters.maxPrice,
+    filters.startDate,
+    filters.endDate,
+    filters.hasCapacity,
+  ]);
+
+  const handleFilterChange = (newFilters: Partial<EventFiltersState>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
+    setPage(1); // Reset to first page when filters change
   };
 
-  const formatPrice = (price: string | null | undefined) => {
-    if (!price) return 'Free';
-    const numPrice = parseFloat(price);
-    if (isNaN(numPrice)) return 'Free';
-    return numPrice === 0 ? 'Free' : `₱${numPrice.toFixed(2)}`;
+  const handleClearFilters = () => {
+    setFilters({
+      search: '',
+      eventType: 'All Events',
+      minPrice: '',
+      maxPrice: '',
+      startDate: '',
+      endDate: '',
+      status: '',
+      organizer: '',
+      hasCapacity: false,
+    });
+    setPage(1);
   };
 
-  const getAvailableSpots = (
-    capacity: number | null | undefined,
-    registrationCount: number | null | undefined
-  ) => {
-    const cap = capacity || 0;
-    const regCount = registrationCount || 0;
-    const available = cap - regCount;
-    return available > 0 ? available : 0;
+  const handleSortChange = () => {
+    // Cycle through sort options
+    const sortOptions: SortOption[] = ['date', 'price', 'popularity', 'name'];
+    const currentIndex = sortOptions.indexOf(sortBy);
+    const nextIndex = (currentIndex + 1) % sortOptions.length;
+    setSortBy(sortOptions[nextIndex]);
+    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
   };
+
+  const getSortLabel = () => {
+    const labels: Record<SortOption, string> = {
+      date: 'Date',
+      price: 'Price',
+      popularity: 'Popularity',
+      name: 'Name',
+    };
+    return `Sort by ${labels[sortBy]} (${sortOrder === 'asc' ? '↑' : '↓'})`;
+  };
+
+  // Separate available and ended events, then apply sorting and pagination
+  const { availableEvents, endedEvents } = useMemo(() => {
+    const now = new Date();
+    const available = events.filter(event => {
+      if (!event.date) return true; // Include events without date as available
+      return new Date(event.date) >= now;
+    });
+    const ended = events.filter(event => {
+      if (!event.date) return false;
+      return new Date(event.date) < now;
+    });
+
+    // Apply sorting to both groups
+    const sortedAvailable = applySorting(available, sortBy, sortOrder);
+    const sortedEnded = applySorting(ended, sortBy, sortOrder);
+
+    return {
+      availableEvents: sortedAvailable,
+      endedEvents: sortedEnded,
+    };
+  }, [events, sortBy, sortOrder]);
+
+  // Apply pagination only to available events (main display)
+  const displayedEvents = useMemo(() => {
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    return availableEvents.slice(start, end);
+  }, [availableEvents, page, limit]);
 
   return (
     <>
       <Background />
-      <div className="min-h-screen  py-8">
+      <div className="min-h-screen py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="text-center mb-12">
@@ -124,239 +380,110 @@ export default function EventsPage() {
             </p>
           </div>
 
-          {/* Minimal Search and Filters */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-6 mb-8">
-            <div className="flex flex-col sm:flex-row gap-4 items-center">
-              {/* Search Bar */}
-              <div className="relative flex-1 max-w-4xl">
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                  <Search className="h-4 w-4 text-purple-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search events..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent focus:bg-white transition-all duration-200 text-gray-900 placeholder-gray-500"
-                />
-              </div>
+          {/* Filters */}
+          <EventFilters
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            onClear={handleClearFilters}
+          />
 
-              {/* Event Type Filter */}
-              <div className="flex-1 max-w-xs">
-                <select
-                  value={eventTypeFilter}
-                  onChange={e => setEventTypeFilter(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:bg-white transition-all duration-200 text-gray-500 placeholder-gray-500"
-                >
-                  {EVENT_TYPES_WITH_ALL.map(type => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Clear Filters */}
-              {(searchTerm ||
-                (eventTypeFilter && eventTypeFilter !== 'All Events')) && (
-                <button
-                  onClick={() => {
-                    setSearchTerm('');
-                    setEventTypeFilter('');
-                  }}
-                  className="px-4 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-all duration-200"
-                >
-                  Clear
-                </button>
+          {/* Sort and Results Header */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+            <div className="text-sm text-gray-600">
+              {loading ? (
+                'Loading...'
+              ) : (
+                <>
+                  {pagination.total > 0 ? (
+                    <>
+                      Showing {displayedEvents.length} of {pagination.total}{' '}
+                      events
+                    </>
+                  ) : (
+                    'No events found'
+                  )}
+                </>
               )}
             </div>
+
+            <button
+              onClick={handleSortChange}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors text-gray-700 font-medium"
+            >
+              <ArrowUpDown className="h-4 w-4" />
+              {getSortLabel()}
+            </button>
           </div>
 
           {/* Events Grid */}
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {[...Array(6)].map((_, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden animate-pulse"
-                >
-                  <div className="h-56 bg-gradient-to-br from-gray-100 to-gray-200"></div>
-                  <div className="p-6">
-                    <div className="h-6 bg-gray-200 rounded-lg w-3/4 mb-3"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-                    <div className="space-y-2 mb-4">
-                      <div className="h-4 bg-gray-200 rounded w-full"></div>
-                      <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <div className="h-8 bg-gray-200 rounded w-20"></div>
-                      <div className="h-10 bg-gray-200 rounded-full w-32"></div>
-                    </div>
-                  </div>
-                </div>
+                <EventCardSkeleton key={index} />
               ))}
             </div>
-          ) : events.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl p-12 max-w-md mx-auto">
-                <Calendar className="h-20 w-20 text-purple-300 mx-auto mb-6" />
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                  No events found
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Try adjusting your search or filters to discover amazing
-                  events.
-                </p>
-                <Link
-                  href="/events"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setEventTypeFilter('');
-                  }}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-full hover:from-purple-700 hover:to-pink-700 transition-all duration-200 transform hover:scale-105"
-                >
-                  <Search className="h-4 w-4" />
-                  Clear Filters
-                </Link>
-              </div>
-            </div>
+          ) : displayedEvents.length === 0 && endedEvents.length === 0 ? (
+            <EventsEmptyState onClearFilters={handleClearFilters} />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {events.map(event => {
-                const isEventPast = event.date
-                  ? new Date(event.date) < new Date()
-                  : false;
-                const spotsLeft = getAvailableSpots(
-                  event.capacity,
-                  event.registration_count
-                );
-                const isSoldOut = spotsLeft === 0;
-
-                return (
-                  <div
-                    key={event.id}
-                    className="group bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:border-purple-200 transition-all duration-300 transform hover:-translate-y-2"
-                  >
-                    {/* Event Image */}
-                    <div className="relative h-56 bg-gradient-to-br from-purple-400 via-pink-400 to-orange-400 overflow-hidden">
-                      {event.image_url ? (
-                        <Image
-                          width={500}
-                          height={500}
-                          src={event.image_url}
-                          alt={event.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500">
-                          <Calendar className="h-20 w-20 text-white opacity-90" />
-                        </div>
-                      )}
-
-                      {/* Status Badge */}
-                      <div className="absolute top-4 right-4">
-                        <span
-                          className={`px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-sm border ${
-                            event.status === 'published'
-                              ? 'bg-green-100/90 text-green-800 border-green-200'
-                              : event.status === 'draft'
-                              ? 'bg-yellow-100/90 text-yellow-800 border-yellow-200'
-                              : event.status === 'cancelled'
-                              ? 'bg-red-100/90 text-red-800 border-red-200'
-                              : 'bg-gray-100/90 text-gray-800 border-gray-200'
-                          }`}
-                        >
-                          {(event.status || 'unknown').charAt(0).toUpperCase() +
-                            (event.status || 'unknown').slice(1)}
-                        </span>
-                      </div>
-
-                      {/* Sold Out / Past Event Overlay */}
-                      {(isSoldOut || isEventPast) && (
-                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                          <span className="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-white font-bold text-sm border border-white/30">
-                            {isEventPast ? 'Event Ended' : 'Sold Out'}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Price Tag */}
-                      <div className="absolute top-4 left-4">
-                        <div className="bg-white/95 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/50">
-                          <span className="text-purple-600 font-bold text-sm">
-                            {formatPrice(event.price)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Event Details */}
-                    <div className="p-6">
-                      <div className="mb-4">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-purple-600 transition-colors">
-                          {event.name}
-                        </h3>
-
-                        <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
-                          {event.details || 'No details available'}
-                        </p>
-                      </div>
-
-                      <div className="space-y-3 mb-6">
-                        <div className="flex items-center text-gray-700">
-                          <div className="flex-shrink-0 w-8 h-8 bg-purple-50 rounded-full flex items-center justify-center mr-3">
-                            <Calendar className="h-4 w-4 text-purple-600" />
-                          </div>
-                          <span className="text-sm font-medium">
-                            {formatDate(event.date)}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center text-gray-700">
-                          <div className="flex-shrink-0 w-8 h-8 bg-pink-50 rounded-full flex items-center justify-center mr-3">
-                            <MapPin className="h-4 w-4 text-pink-600" />
-                          </div>
-                          <span className="text-sm font-medium truncate">
-                            {event.venue || 'Venue TBD'}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center text-gray-700">
-                          <div className="flex-shrink-0 w-8 h-8 bg-orange-50 rounded-full flex items-center justify-center mr-3">
-                            <Users className="h-4 w-4 text-orange-600" />
-                          </div>
-                          <span className="text-sm font-medium">
-                            {spotsLeft > 0 ? (
-                              <>
-                                <span className="text-green-600 font-semibold">
-                                  {spotsLeft}
-                                </span>{' '}
-                                spots left
-                              </>
-                            ) : (
-                              <span className="text-red-600 font-semibold">
-                                Sold out
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Action Button */}
-                      <Link
-                        href={`/events/${event.id}`}
-                        className="block w-full"
-                      >
-                        <button className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-2xl hover:from-purple-700 hover:to-pink-700 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl">
-                          <span>View Details</span>
-                          <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                        </button>
-                      </Link>
-                    </div>
+            <>
+              {/* Available Events */}
+              {displayedEvents.length > 0 && (
+                <>
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      Available Events ({availableEvents.length})
+                    </h2>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
+                    {displayedEvents.map(event => (
+                      <EventCard key={event.id} event={event} />
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  {pagination.totalPages > 1 && (
+                    <EventsPagination
+                      pagination={pagination}
+                      onPageChange={newPage => {
+                        setPage(newPage);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      onLimitChange={newLimit => {
+                        setLimit(newLimit);
+                        setPage(1);
+                      }}
+                    />
+                  )}
+                </>
+              )}
+
+              {/* Separator between available and ended events */}
+              {displayedEvents.length > 0 && endedEvents.length > 0 && (
+                <div className="my-12 flex items-center gap-4">
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+                  <span className="text-sm font-medium text-gray-500 px-4">
+                    Past Events
+                  </span>
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+                </div>
+              )}
+
+              {/* Ended Events */}
+              {endedEvents.length > 0 && (
+                <>
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 opacity-75">
+                      Past Events ({endedEvents.length})
+                    </h2>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 opacity-75">
+                    {endedEvents.map(event => (
+                      <EventCard key={event.id} event={event} />
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
           )}
         </div>
       </div>

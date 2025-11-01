@@ -323,6 +323,8 @@ Please present this ticket at the venue.
                     return null;
                   })()}
 
+                {/* Payment Status - REMOVED: Payment is now disabled */}
+
                 {/* Action Buttons */}
                 <div className="pt-4 border-t border-gray-200 flex gap-3">
                   <button
@@ -349,8 +351,8 @@ Please present this ticket at the venue.
         {/* Cancel Confirmation Modal */}
         {showCancelConfirm && (
           <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
-            <div className="absolute inset-0 bg-black bg-opacity-50"></div>
-            <div className="relative z-10 bg-white rounded-xl p-6 max-w-md w-full">
+            <div className="absolute inset-0 bg-white/30 backdrop-blur-sm"></div>
+            <div className="relative z-10 bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Cancel Ticket
               </h3>

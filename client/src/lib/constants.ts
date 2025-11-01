@@ -13,6 +13,15 @@ export const EVENT_TYPES = [
   'Sports Event',
   'Charity Event',
   'Networking Event',
+  'Festival',
+  'Tour',
+  'Retreat',
+  'Summit',
+  'Showcase',
+  'Launch Event',
+  'Fundraiser',
+  'Award Ceremony',
+  'Gala',
   'Other',
 ] as const;
 

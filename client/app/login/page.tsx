@@ -32,7 +32,15 @@ export default function LoginPage() {
     const result = await login(email, password);
 
     if (result.success) {
-      toast.success('Login successful! Welcome back!');
+      // Check if this is a first-time login (user was just created)
+      const justRegistered = localStorage.getItem('just_registered') === 'true';
+
+      if (justRegistered) {
+        localStorage.removeItem('just_registered');
+        toast.success('Login successful! Welcome!');
+      } else {
+        toast.success('Login successful! Welcome back!');
+      }
 
       // Check if user is admin and redirect accordingly
       if ((result as any).isAdmin) {
