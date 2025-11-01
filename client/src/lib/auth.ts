@@ -1,5 +1,5 @@
 // Neon Auth API configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Authentication utilities
 export const isAdmin = (user: any) => {
@@ -21,6 +21,14 @@ export interface User {
   created_at: string;
   updated_at: string;
   isAdmin?: boolean;
+  // Organizer role fields
+  role?: 'user' | 'organizer';
+  organization_name?: string;
+  organization_type?: string;
+  event_types?: string[];
+  organization_description?: string;
+  organization_website?: string;
+  organizer_since?: string;
 }
 
 // API response types
@@ -32,6 +40,9 @@ export interface AuthResponse {
   refreshToken?: string;
   error?: string;
   isAdmin?: boolean;
+  // For upgrade response
+  needsUpgrade?: boolean;
+  newToken?: string;
 }
 
 // Refresh token response type
@@ -48,7 +59,7 @@ export const authApi = {
   // Register user
   async register(email: string, password: string, name?: string): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -69,7 +80,7 @@ export const authApi = {
   // Login user
   async login(email: string, password: string): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -90,7 +101,7 @@ export const authApi = {
   // Refresh access token
   async refreshToken(refreshToken: string): Promise<RefreshResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,7 +122,7 @@ export const authApi = {
   // Get current user
   async getCurrentUser(token: string): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/me`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -132,7 +143,7 @@ export const authApi = {
   // Update user profile
   async updateProfile(token: string, name: string): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -163,9 +174,45 @@ export const authApi = {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         headers,
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Network error. Please try again.',
+      };
+    }
+  },
+
+  // Upgrade user to organizer
+  async upgradeToOrganizer(upgradeData: {
+    organization_name: string;
+    organization_type: string;
+    event_types: string[];
+    organization_description?: string;
+    organization_website?: string;
+  }, token?: string): Promise<AuthResponse> {
+    try {
+      const authToken = token || tokenManager.getToken();
+      if (!authToken) {
+        return {
+          success: false,
+          error: 'No authentication token found',
+        };
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/auth/upgrade-to-organizer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(upgradeData),
       });
 
       const data = await response.json();

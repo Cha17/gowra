@@ -32,7 +32,15 @@ export default function LoginPage() {
     const result = await login(email, password);
 
     if (result.success) {
-      toast.success('Login successful! Welcome back!');
+      // Check if this is a first-time login (user was just created)
+      const justRegistered = localStorage.getItem('just_registered') === 'true';
+
+      if (justRegistered) {
+        localStorage.removeItem('just_registered');
+        toast.success('Login successful! Welcome!');
+      } else {
+        toast.success('Login successful! Welcome back!');
+      }
 
       // Check if user is admin and redirect accordingly
       if (result.isAdmin) {
@@ -109,10 +117,10 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="text-base text-gray-500 block w-full pl-12 pr-12 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
+                  className="text-base text-gray-500 block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all bg-white/50 backdrop-blur-sm"
                   placeholder="Enter your password"
                 />
-                <button
+                {/* <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-4 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
@@ -122,7 +130,7 @@ export default function LoginPage() {
                   ) : (
                     <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
                   )}
-                </button>
+                </button> */}
               </div>
             </div>
 
@@ -231,12 +239,12 @@ export default function LoginPage() {
         </div>
 
         {/* Floating Elements */}
-        <div className="absolute top-20 left-10 animate-bounce">
+        {/* <div className="absolute top-20 left-10 animate-bounce">
           <div className="w-8 h-8 bg-purple-200 rounded-full opacity-60"></div>
         </div>
         <div className="absolute bottom-20 right-10 animate-pulse">
           <div className="w-6 h-6 bg-pink-200 rounded-full opacity-60"></div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

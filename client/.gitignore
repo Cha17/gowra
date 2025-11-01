@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+# Add to .gitignore or create .pages-ignore
+.next/cache/
+cache/
+node_modules/
+.vercel

@@ -96,9 +96,13 @@ export default function RegisterPage() {
     );
 
     if (result.success) {
-      toast.success('Registration successful! Welcome to our platform!');
-      // Redirect to dashboard or home page
-      window.location.href = '/';
+      // Mark that user just registered so login can show welcome instead of welcome back
+      localStorage.setItem('just_registered', 'true');
+      toast.success('Registration successful! Please log in to continue.');
+      // Redirect to login page after successful registration
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1500); // Wait 1.5 seconds to show the success message
     } else {
       toast.error(result.error || 'Registration failed. Please try again.');
     }
@@ -202,7 +206,7 @@ export default function RegisterPage() {
                   className="text-base text-gray-500 block w-full pl-12 pr-12 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
                   placeholder="Create a strong password"
                 />
-                <button
+                {/* <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-4 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
@@ -212,7 +216,7 @@ export default function RegisterPage() {
                   ) : (
                     <Eye className="h-5 w-5 text-gray-500 hover:text-gray-600 transition-colors" />
                   )}
-                </button>
+                </button> */}
               </div>
 
               {/* Password Strength Indicator */}
@@ -272,7 +276,7 @@ export default function RegisterPage() {
                   }`}
                   placeholder="Confirm your password"
                 />
-                <button
+                {/* <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-4 flex items-center"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -282,7 +286,7 @@ export default function RegisterPage() {
                   ) : (
                     <Eye className="h-5 w-5 text-gray-500 hover:text-gray-600 transition-colors" />
                   )}
-                </button>
+                </button> */}
                 {formData.confirmPassword && (
                   <div className="absolute inset-y-0 right-12 flex items-center">
                     {formData.password === formData.confirmPassword ? (
@@ -404,12 +408,12 @@ export default function RegisterPage() {
         </div>
 
         {/* Floating Elements */}
-        <div className="absolute top-20 left-10 animate-bounce">
+        {/* <div className="absolute top-20 left-10 animate-bounce">
           <div className="w-8 h-8 bg-purple-200 rounded-full opacity-60"></div>
         </div>
         <div className="absolute bottom-20 right-10 animate-pulse">
           <div className="w-6 h-6 bg-pink-200 rounded-full opacity-60"></div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

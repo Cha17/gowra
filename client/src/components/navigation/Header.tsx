@@ -6,7 +6,18 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Home, Calendar, User, Settings, LogOut, Menu, X } from 'lucide-react';
+import {
+  Home,
+  Calendar,
+  User,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  Building2,
+  Plus,
+  Ticket,
+} from 'lucide-react';
 import Background from '../ui/Background';
 import {
   DropdownMenu,
@@ -57,6 +68,7 @@ export default function Header() {
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Events', href: '/events', icon: Calendar },
+    { name: 'About', href: '/about', icon: User },
   ];
 
   return (
@@ -124,15 +136,78 @@ export default function Header() {
                   >
                     <DropdownMenuLabel className="px-3 py-2 bg-gray-50 border-b border-gray-100">
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-semibold leading-none text-gray-900">
-                          {user?.name || 'User'}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold leading-none text-gray-900">
+                            {user?.name || 'User'}
+                          </p>
+                          {user?.role === 'organizer' && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                              🎯 Organizer
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs leading-none text-gray-500">
                           {user?.email}
                         </p>
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
+
+                    <DropdownMenuItem
+                      asChild
+                      className="px-3 py-2 hover:bg-blue-50 focus:bg-blue-50"
+                    >
+                      <Link
+                        href="/dashboard"
+                        className="cursor-pointer text-gray-700 hover:text-blue-600"
+                      >
+                        <Ticket className="w-4 h-4 mr-2 text-gray-500" />
+                        My Tickets
+                      </Link>
+                    </DropdownMenuItem>
+
+                    {/* Organizer Features */}
+                    {user?.role === 'organizer' ? (
+                      <>
+                        <DropdownMenuItem
+                          asChild
+                          className="px-3 py-2 hover:bg-purple-50 focus:bg-purple-50"
+                        >
+                          <Link
+                            href="/organizer"
+                            className="cursor-pointer text-gray-700 hover:text-purple-600"
+                          >
+                            <Building2 className="w-4 h-4 mr-2 text-purple-500" />
+                            Manage My Events
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          asChild
+                          className="px-3 py-2 hover:bg-purple-50 focus:bg-purple-50"
+                        >
+                          <Link
+                            href="/organizer/events"
+                            className="cursor-pointer text-gray-700 hover:text-purple-600"
+                          >
+                            <Plus className="w-4 h-4 mr-2 text-purple-500" />
+                            My Events
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    ) : (
+                      <DropdownMenuItem
+                        asChild
+                        className="px-3 py-2 hover:bg-purple-50 focus:bg-purple-50"
+                      >
+                        <Link
+                          href="/organizer/upgrade"
+                          className="cursor-pointer text-gray-700 hover:text-purple-600"
+                        >
+                          <Building2 className="w-4 h-4 mr-2 text-purple-500" />
+                          Become Organizer
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
 
                     <DropdownMenuItem
                       asChild
@@ -147,7 +222,7 @@ export default function Header() {
                       </Link>
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem
+                    {/* <DropdownMenuItem
                       asChild
                       className="px-3 py-2 hover:bg-blue-50 focus:bg-blue-50"
                     >
@@ -158,7 +233,7 @@ export default function Header() {
                         <Settings className="w-4 h-4 mr-2 text-gray-500" />
                         Settings
                       </Link>
-                    </DropdownMenuItem>
+                    </DropdownMenuItem> */}
 
                     <DropdownMenuSeparator />
 
@@ -216,7 +291,7 @@ export default function Header() {
                     <Link
                       key={item.name}
                       href={item.href}
-                      className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <Icon className="w-5 h-5" />
@@ -236,8 +311,16 @@ export default function Header() {
                         <p className="text-sm text-gray-500">{user?.email}</p>
                       </div>
                       <Link
+                        href="/dashboard"
+                        className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Calendar className="w-5 h-5" />
+                        <span>Dashboard</span>
+                      </Link>
+                      <Link
                         href="/profile"
-                        className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                        className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium transition-colors"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         <User className="w-5 h-5" />
@@ -245,7 +328,7 @@ export default function Header() {
                       </Link>
                       <Link
                         href="/settings"
-                        className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                        className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium transition-colors"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         <Settings className="w-5 h-5" />
@@ -267,7 +350,7 @@ export default function Header() {
                     <div className="space-y-2">
                       <Link
                         href="/login"
-                        className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                        className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-base font-medium transition-colors"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         <User className="w-5 h-5" />
@@ -275,7 +358,7 @@ export default function Header() {
                       </Link>
                       <Link
                         href="/register"
-                        className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                        className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-base font-medium transition-colors"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         <User className="w-5 h-5" />

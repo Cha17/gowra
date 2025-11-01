@@ -5,6 +5,7 @@ import { NeonAuthProvider } from '@/src/components/providers/NeonAuthProvider';
 import { Toaster } from 'sonner';
 import Header from '@/src/components/navigation/Header';
 import Background from '@/src/components/ui/Background';
+import DebugAuthState from '@/src/components/DebugAuthState';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -17,9 +18,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Gowra - Event Management System',
+  title: 'Gowra',
   description:
     'A modern event management system built with Next.js and Stack Auth',
+  icons: {
+    icon: [{ url: '/assets/G.png' }],
+  },
 };
 
 export default function RootLayout({
@@ -33,10 +37,20 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Background />
+        {/* Authentication System */}
         <NeonAuthProvider>
           <Header />
           <main>{children}</main>
-          <Toaster position="top-right" />
+          <Toaster
+            position="top-right"
+            expand={false}
+            richColors
+            visibleToasts={1}
+            toastOptions={{
+              duration: 3000,
+            }}
+          />
+          {/* <DebugAuthState /> */}
         </NeonAuthProvider>
       </body>
     </html>
