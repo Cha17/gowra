@@ -26,6 +26,7 @@ export function loadNextPayConfig(env: EnvBinding): NextPayConfig {
     const missingCreds = [];
     if (!env.NEXTPAY_API_KEY) missingCreds.push('NEXTPAY_API_KEY');
     if (!env.NEXTPAY_SECRET_KEY) missingCreds.push('NEXTPAY_SECRET_KEY');
+    if (!env.NEXTAPI_BASE_URL) missingCreds.push('NEXTAPI_BASE_URL');
     
     if (missingCreds.length > 0) {
       throw new Error(
@@ -36,9 +37,9 @@ export function loadNextPayConfig(env: EnvBinding): NextPayConfig {
     
     // Validate the environment variables
     const validatedEnv = NextPayEnvSchema.parse({
-      NEXTAPI_BASE_URL: env.NEXTAPI_BASE_URL,
-      NEXTPAY_API_KEY: env.NEXTPAY_API_KEY,
-      NEXTPAY_SECRET_KEY: env.NEXTPAY_SECRET_KEY,
+      NEXTAPI_BASE_URL: env.NEXTAPI_BASE_URL!,
+      NEXTPAY_API_KEY: env.NEXTPAY_API_KEY!,
+      NEXTPAY_SECRET_KEY: env.NEXTPAY_SECRET_KEY!,
       NEXTPAY_TIMEOUT: env.NEXTPAY_TIMEOUT,
       NEXTPAY_RETRY_ATTEMPTS: env.NEXTPAY_RETRY_ATTEMPTS,
       NEXTPAY_ACCOUNT_ID: env.NEXTPAY_ACCOUNT_ID,
