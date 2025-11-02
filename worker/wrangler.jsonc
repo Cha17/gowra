@@ -4,9 +4,7 @@
   "main": "src/index.ts",
   "keep_vars": true,
   "compatibility_date": "2025-08-14",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
+  "compatibility_flags": ["nodejs_compat"],
   "env": {
     "staging": {
       "name": "gowwra-api-worker-staging",
@@ -20,10 +18,8 @@
         "NEXTPAY_RETRY_ATTEMPTS": 3,
         // "NEXTPAY_ACCOUNT_ID": "YOUR_NEXTPAY_ACCOUNT_ID_HERE"
         "NEXTAPI_CREATE_INTENT_PATH": "/v1/payment-intents",
-        "NEXTAPI_GET_INTENT_PATH": "/v1/payment-intents/:payment_intent_id",
-      }
-    },
-    
+        "NEXTAPI_GET_INTENT_PATH": "/v1/payment-intents/:payment_intent_id"
+      },
       "observability": {
         "logs": {
           "enabled": true,
@@ -31,23 +27,31 @@
           "invocation_logs": true,
           "persist": true
         }
-      },
-    
+      }
+    },
+
     "production": {
-      "name": "gowwra-api-worker-production", 
+      "name": "gowwra-api-worker-production",
       "vars": {
         "ENVIRONMENT": "production",
-        "NEXTAPI_BASE_URL": "https://api.partners.nextpay.world",
-        "CHECKOUT_ENABLED": true,
-        // "NEXTPAY_API_KEY": "YOUR_NEXTPAY_API_KEY_HERE",
-        // "NEXTPAY_SECRET_KEY": "YOUR_NEXTPAY_SECRET_KEY_HERE",
-        
-        "NEXTPAY_TIMEOUT": 30000,
-        "NEXTPAY_RETRY_ATTEMPTS": 3,
-        // "NEXTPAY_ACCOUNT_ID": "YOUR_NEXTPAY_ACCOUNT_ID_HERE"
-        "NEXTAPI_CREATE_INTENT_PATH": "/v1/payment-intents",
-        "NEXTAPI_GET_INTENT_PATH": "/v1/payment-intents/:payment_intent_id",
-        
+        // "NEXTAPI_BASE_URL": "https://api.partners.nextpay.world",
+        // "CHECKOUT_ENABLED": true,
+        // // "NEXTPAY_API_KEY": "YOUR_NEXTPAY_API_KEY_HERE",
+        // // "NEXTPAY_SECRET_KEY": "YOUR_NEXTPAY_SECRET_KEY_HERE",
+
+        // "NEXTPAY_TIMEOUT": 30000,
+        // "NEXTPAY_RETRY_ATTEMPTS": 3,
+        // // "NEXTPAY_ACCOUNT_ID": "YOUR_NEXTPAY_ACCOUNT_ID_HERE"
+        // "NEXTAPI_CREATE_INTENT_PATH": "/v1/payment-intents",
+        // "NEXTAPI_GET_INTENT_PATH": "/v1/payment-intents/:payment_intent_id",
+        "observability": {
+          "logs": {
+            "enabled": true,
+            "head_sampling_rate": 1,
+            "invocation_logs": true,
+            "persist": true
+          }
+        }
       }
     }
   }

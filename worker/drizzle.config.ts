@@ -8,7 +8,7 @@ import { defineConfig } from 'drizzle-kit';
  * or use environment variables from the local environment
  */
 export default defineConfig({
-  // Schema location - where our table definitions are
+  // Schema location - where our table definitions are 
   schema: './src/db/schema.ts',
   
   // Output directory for migration files
