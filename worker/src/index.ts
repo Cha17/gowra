@@ -32,6 +32,19 @@ const app = appBase
 	}))
 	.use(parseEnvMiddleware)
 
+	.get("/", (c) => {
+		return c.json({
+			message: "Gowra Events API",
+			version: "1.0.0",
+			endpoints: {
+				health: "/health",
+				auth: "/api/auth",
+				events: "/api/events",
+				registrations: "/api/registrations",
+				admin: "/api/admin",
+			},
+		});
+	})
 	.get("/health", (c) => {
 		return c.json({ status: "ok", message: "Gowra Events API is running" });
 	})

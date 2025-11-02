@@ -9,6 +9,21 @@ export const parseEnvMiddleware = createMiddleware(async (c, next) => {
 	try {
 		EnvBindingSchema.passthrough().parse(c.env);
 	} catch (error) {
+		// Format Zod errors more clearly
+		if (error && typeof error === 'object' && 'errors' in error) {
+			const zodError = error as { errors: Array<{ path: (string | number)[], message: string, code: string }> };
+			const formattedErrors = JSON.stringify(zodError.errors, null, 2);
+			console.error('Environment validation failed:', formattedErrors);
+			return c.json(
+				{
+					success: false,
+					error: 'Invalid environment variables',
+					details: zodError.errors,
+					message: 'The API server is misconfigured. Please check environment variables.',
+				},
+				500
+			);
+		}
 		throw new Error(`Invalid environment variables: ${error}`);
 	}
 
