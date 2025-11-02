@@ -6,7 +6,7 @@
     "dev:staging": "wrangler dev --env staging",
     "deploy": "wrangler deploy --minify",
     "deploy:staging": "wrangler deploy --env staging --minify --keep-vars",
-    "deploy:production": "wrangler deploy --env production --minify",
+    "deploy:production": "wrangler deploy --env production --minify --keep-vars",
     "test:staging": "node scripts/test-staging.js",
     "logs:staging": "wrangler tail --env staging",
     "logs:production": "wrangler tail --env production",
